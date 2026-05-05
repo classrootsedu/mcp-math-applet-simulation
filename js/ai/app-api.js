@@ -75,7 +75,64 @@
 
     // ----- actions -----
     actions: {},   // populated lazily by _bindActions; per-name proxies live here
-    admin:   {},
+
+    // ----- admin (global) -----
+    // Note: setQuestion lives on Page1Surface (per-question dividend/divisor edit).
+    // setQuestionIndex and reset are app-level and live here directly.
+    admin: {
+      setQuestionIndex(args) {
+        return safeCall(() => {
+          const idx = args && args.index;
+          const qList = global.question || [];
+          if (!Number.isInteger(idx) || idx < 0 || idx >= qList.length) {
+            return { ok: false, error: { code: 'E_BAD_ARGS',
+              message: `index must be int 0..${qList.length - 1}` } };
+          }
+          global.currentQuestionIndex = idx;
+          eventBus.emit({ type: 'question.changed', source: 'ai',
+                          payload: { from: undefined, to: idx,
+                                     dividend: qList[idx].dividend, divisor: qList[idx].divisor,
+                                     source: 'admin' } });
+          if (typeof global.forceAppUpdate === 'function') global.forceAppUpdate();
+          return { ok: true, result: { questionIndex: idx } };
+        });
+      },
+
+      reset(args) {
+        return safeCall(() => {
+          const to = args && args.to;
+          const valid = ['page1', 'page2-fresh', 'currentPage-fresh'];
+          if (!valid.includes(to)) {
+            return { ok: false, error: { code: 'E_BAD_ARGS',
+              message: `to must be one of: ${valid.join(', ')}` } };
+          }
+          // Clear completion / hint state.
+          if (global.PageCompletionManager &&
+              typeof global.PageCompletionManager.setPageCompleted === 'function') {
+            global.PageCompletionManager.setPageCompleted(2, false);
+            global.PageCompletionManager.setPageCompleted(1, false);
+          }
+          if (global.__longDivisionComplete  !== undefined) delete global.__longDivisionComplete;
+          if (global.__longDivisionGuidedHint !== undefined) delete global.__longDivisionGuidedHint;
+          eventBus.clear();
+
+          if (to === 'page1') {
+            global.currentQuestionIndex = 0;
+            global.page1complete = false;
+            global.objectsremoved = 0;
+            if (typeof global.changePageAndNotify === 'function') global.changePageAndNotify(1);
+          } else if (to === 'page2-fresh') {
+            global.currentQuestionIndex = 0;
+            if (typeof global.changePageAndNotify === 'function') global.changePageAndNotify(2);
+          } else {
+            // currentPage-fresh: re-render current page without navigating
+            if (typeof global.forceAppUpdate === 'function') global.forceAppUpdate();
+          }
+
+          return { ok: true, result: { to } };
+        });
+      }
+    },
 
     // ----- internals (prefixed _ to discourage external use) -----
     _eventBus: eventBus,
@@ -91,12 +148,17 @@
         click:    (args) => AppAPI._invokeUI('click',    args || {}),
         pressKey: (args) => AppAPI._invokeUI('pressKey', args || {})
       };
-      AppAPI.admin = {};
+      // Preserve the global admin methods declared above; only re-add surface-specific ones.
+      const preservedAdmin = { setQuestionIndex: AppAPI.admin.setQuestionIndex,
+                               reset:            AppAPI.admin.reset };
+      AppAPI.admin = preservedAdmin;
       for (const s of registry.list()) {
         const m = s.getManifest();
         if (!m.semanticActions) continue;
         for (const a of m.semanticActions) {
           const target = (a.scope === 'admin') ? AppAPI.admin : AppAPI.actions;
+          // Don't overwrite a globally-defined admin method with a surface proxy.
+          if (target === AppAPI.admin && preservedAdmin.hasOwnProperty(a.name)) continue;
           target[a.name] = (args) => AppAPI._invokeSemantic(a.name, args || {}, a.scope);
         }
       }

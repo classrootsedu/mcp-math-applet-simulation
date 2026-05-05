@@ -25,6 +25,12 @@
         if (m.uiElements)      uiElements.push(...m.uiElements);
         if (!goal && m.goal)   goal = m.goal;
       }
+      // Page-level admin actions (implemented on AppAPI.admin directly)
+      semanticActions.push(
+        { name: 'setQuestion',      args: { dividend: 'int>0', divisor: 'int>0' }, scope: 'admin' },
+        { name: 'setQuestionIndex', args: { index: 'int>=0' },                     scope: 'admin' },
+        { name: 'reset',            args: { to: 'page1|page2-fresh|currentPage-fresh' }, scope: 'admin' }
+      );
       return { semanticActions, uiElements, goal };
     }
 

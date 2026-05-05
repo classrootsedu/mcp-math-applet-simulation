@@ -37,7 +37,7 @@ test('page1-surface: manifest lists start + setQuestion (admin)', () => {
   const w = load();
   const s = new w.Page1Surface();
   const m = s.getManifest();
-  assert.deepEqual(m.semanticActions.map(a => a.name).sort(), ['setQuestion', 'start']);
+  assert.deepEqual(m.semanticActions.map(a => a.name).sort(), ['reset', 'setQuestion', 'setQuestionIndex', 'start']);
   assert.equal(m.semanticActions.find(a => a.name === 'setQuestion').scope, 'admin');
   assert.equal(m.goal.kind, 'navigate');
   assert.equal(m.goal.target, 2);

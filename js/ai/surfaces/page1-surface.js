@@ -24,7 +24,11 @@
         semanticActions: [
           { name: 'start',       args: {},                                  description: 'Begin solving' },
           { name: 'setQuestion', args: { dividend: 'int>0', divisor: 'int>0' }, scope: 'admin',
-            description: 'Replace the current question (admin)' }
+            description: 'Replace the current question (admin)' },
+          { name: 'setQuestionIndex', args: { index: 'int>=0' }, scope: 'admin',
+            description: 'Jump to question N (admin)' },
+          { name: 'reset', args: { to: 'page1|page2-fresh|currentPage-fresh' }, scope: 'admin',
+            description: 'Reset completion state and optionally navigate (admin)' }
         ],
         uiElements: [
           { id: 'page1-start-button',             role: 'button',
