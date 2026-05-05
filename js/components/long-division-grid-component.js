@@ -4308,6 +4308,78 @@
       setGuidedDragPosition({ x: 0, y: 0 });
     }, [isGuidedDragging, guidedDraggedDigit, getCurrentGuidedStep, guidedComplete, applyGuidedDigit]);
     
+    /**
+     * AI-facing wrapper around applyGuidedDigit.
+     * Validates cellKey matches the current expected step's cellKey, then delegates
+     * to applyGuidedDigit. Does NOT change user-facing behavior — only adds a
+     * structured return for window.AppAPI consumers.
+     *
+     * @param {{cellKey: string, value: number, source: string}} args
+     * @returns {{accepted: boolean, correct: boolean, expected: number|null, advancedTo: string|null, hint: object|null}}
+     */
+    const applyDigit = React.useCallback(({ cellKey, value, source } = {}) => {
+      // Locate the active guided step.
+      const stepBefore = guidedSteps[guidedStepIndex] || null;
+      if (!stepBefore || stepBefore.cellKey !== cellKey) {
+        // The AI tried to fill a cell that isn't currently the active step.
+        // Reject without mutating state — caller (AI surface) can read currentStep
+        // from the handle and retry with the right cellKey.
+        return {
+          accepted: false,
+          correct: false,
+          expected: stepBefore ? stepBefore.correctValue : null,
+          advancedTo: null,
+          hint: typeof window !== 'undefined' ? (window.__longDivisionGuidedHint || null) : null
+        };
+      }
+      const expected = stepBefore.correctValue;
+      const correct  = (Number(value) === Number(expected));
+
+      // Delegate to existing handler. It owns the React state updates, audio, hint, and advance.
+      applyGuidedDigit(value);
+
+      // Compute advancedTo from the steps array (post-call inspection).
+      // Note: setGuidedStepIndex is async; we read the step that *would* be next on success.
+      let advancedTo = null;
+      if (correct) {
+        const nextStep = guidedSteps[guidedStepIndex + 1];
+        advancedTo = nextStep ? nextStep.type : 'complete';
+      }
+
+      return {
+        accepted: true,
+        correct,
+        expected,
+        advancedTo,
+        hint: typeof window !== 'undefined' ? (window.__longDivisionGuidedHint || null) : null
+      };
+    }, [applyGuidedDigit, guidedSteps, guidedStepIndex]);
+
+    // Expose AI-facing grid handle. Only when AI scaffolding is active.
+    React.useEffect(() => {
+      if (typeof window === 'undefined') return;
+      if (!window.APP_CONFIG || !window.APP_CONFIG.AI_ENABLED) return;
+      if (mode !== 'guided') return;
+
+      window.__longDivisionGridHandle = {
+        applyDigit,
+        getGuidedValues:    () => guidedValues,
+        getGuidedValidation:() => guidedValidation,
+        getGuidedSteps:     () => guidedSteps,
+        getGuidedStepIndex: () => guidedStepIndex,
+        getProblem:         () => ({ dividend, divisor }),
+        getSelectedStartingDigits: () => Array.from(selectedStartingDigits || [])
+      };
+
+      return () => {
+        if (window.__longDivisionGridHandle &&
+            window.__longDivisionGridHandle.applyDigit === applyDigit) {
+          delete window.__longDivisionGridHandle;
+        }
+      };
+    }, [applyDigit, guidedValues, guidedValidation, guidedSteps, guidedStepIndex,
+        dividend, divisor, selectedStartingDigits, mode]);
+
     const handleGuidedDigitClick = React.useCallback((digit) => {
       applyGuidedDigit(digit);
     }, [applyGuidedDigit]);
