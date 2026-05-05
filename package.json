@@ -1,0 +1,11 @@
+{
+  "name": "g4c3m20a1-ai-scaffold",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test --test-reporter=spec tests/"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
