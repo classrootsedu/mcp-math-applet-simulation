@@ -49,6 +49,21 @@ test('bridge: handshake → ack with capabilities intersection + initial schema'
   teardownWindow();
 });
 
+test('bridge: successful handshake emits bridge.handshake event into the eventBus', async () => {
+  const w = loadBridge();
+  captureOutgoing(w);
+  postMsg(w, { v: 1, type: 'ai.handshake', requestId: 'h1',
+               caller: { name: 't', version: '0' }, capabilities: ['actions','events','transcript'] });
+  await new Promise(r => setTimeout(r, 10));
+  const t = w.AppAPI.transcript({ since: 0 });
+  const handshakeEvents = t.events.filter(e => e.type === 'bridge.handshake');
+  assert.equal(handshakeEvents.length, 1, 'expected exactly one bridge.handshake event in transcript');
+  assert.equal(handshakeEvents[0].source, 'system');
+  assert.equal(handshakeEvents[0].payload.caller.name, 't');
+  assert.deepEqual(handshakeEvents[0].payload.capabilities.sort(), ['actions','events','transcript']);
+  teardownWindow();
+});
+
 test('bridge: ai.call before handshake → E_NO_HANDSHAKE', async () => {
   const w = loadBridge();
   const out = captureOutgoing(w);

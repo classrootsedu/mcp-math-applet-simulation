@@ -3,10 +3,20 @@
   'use strict';
 
   class NavSurface extends global.AIControlSurface {
-    constructor(page) { super(); this._page = page; }
+    constructor(page) { super(); this._page = page; this._eventBus = null; }
     get id()    { return `nav-surface-page${this._page}`; }
     get kind()  { return 'navigation'; }
     get scope() { return { page: this._page }; }
+
+    attach(eventBus) { this._eventBus = eventBus; }
+    detach()         { this._eventBus = null; }
+
+    _emitPageChanged(from, to) {
+      if (this._eventBus && typeof this._eventBus.emit === 'function') {
+        this._eventBus.emit({ type: 'page.changed', source: 'ai',
+                              page: from, payload: { from, to } });
+      }
+    }
 
     getManifest() {
       return {
@@ -42,6 +52,7 @@
     }
 
     _next(action) {
+      let to = null;
       // Mirror the existing page2-next-button onClick logic from PageConfig.js (page 2 cycles questions).
       if (this._page === 2) {
         const qList = global.question || [];
@@ -57,22 +68,29 @@
           global.page1complete = false;
           global.objectsremoved = 0;
           if (typeof global.changePageAndNotify === 'function') global.changePageAndNotify(1);
+          to = 1;
         } else {
           global.currentQuestionIndex = currentIndex + 1;
           if (typeof global.changePageAndNotify === 'function') global.changePageAndNotify(2);
+          to = 2;
         }
       } else if (this._page === 1) {
         if (typeof global.changePageAndNotify === 'function') global.changePageAndNotify(2);
+        to = 2;
       }
+      if (to !== null && to !== this._page) this._emitPageChanged(this._page, to);
       return { ok: true, actionId: action.actionId, page: this._page,
                stepBefore: 'navIdle', stepAfter: 'navIdle',
                validation: { correct: true }, feedback: null, stateDelta: {} };
     }
 
     _prev(action) {
+      let to = null;
       if (this._page === 2) {
         if (typeof global.changePageAndNotify === 'function') global.changePageAndNotify(1);
+        to = 1;
       }
+      if (to !== null && to !== this._page) this._emitPageChanged(this._page, to);
       return { ok: true, actionId: action.actionId, page: this._page,
                stepBefore: 'navIdle', stepAfter: 'navIdle',
                validation: { correct: true }, feedback: null, stateDelta: {} };

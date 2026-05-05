@@ -184,9 +184,13 @@
         cellKey = `${rowKind}-0`;
       }
       const r = h.applyDigit({ cellKey, value, source: action.source || 'ai' });
+      // Use applyDigit's advancedTo (computed inside the wrapper before React's
+      // setGuidedStepIndex flush) instead of re-querying currentStep, which would
+      // read the stale pre-advance index.
+      const stepAfter = r.correct ? (r.advancedTo || 'complete') : stepBefore;
       return {
         ok: true, actionId: action.actionId, page: 2,
-        stepBefore, stepAfter: currentStep(),
+        stepBefore, stepAfter,
         validation: { correct: r.correct, expected: r.expected, accepted: value },
         feedback: r.correct
           ? { kind: 'correct',  sound: 'correct.mp3' }
@@ -216,10 +220,16 @@
       if (!Array.isArray(digits) || !digits.every(d => Number.isInteger(d) && d >= 0)) {
         return this._badArgs(action, 'digits must be array of int>=0');
       }
-      // The actual selection mutator is internal; the existing dividend-click handler stays the
-      // source of truth. We expose this action for parity but route via the click handler when
-      // available — for v1, surface the call as accepted and let the user-facing step advance
-      // via the existing path. Future work: add a setter on the grid handle.
+      if (typeof h.selectStartingDigit !== 'function') {
+        return { ok: false, actionId: action.actionId,
+                 error: { code: 'E_NOT_INTERACTABLE',
+                          message: 'grid handle does not expose selectStartingDigit' } };
+      }
+      // The grid's selectStartingDigit only accepts sequential additions (0, then 1, then 2…)
+      // and removes from the end. Apply the digits in order.
+      for (const d of digits) {
+        h.selectStartingDigit(d);
+      }
       return {
         ok: true, actionId: action.actionId, page: 2,
         stepBefore, stepAfter: currentStep(),

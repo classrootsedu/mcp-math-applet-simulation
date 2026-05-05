@@ -62,6 +62,13 @@
     }
     const requested = Array.isArray(data.capabilities) ? data.capabilities : [];
     const granted = requested.filter(c => ['actions','events','transcript','admin'].includes(c));
+    // Drain any subscriptions from the previous session so the eventBus doesn't
+    // keep fanning events to an orphaned caller after a re-handshake.
+    if (session && session.subs) {
+      for (const off of session.subs.values()) {
+        try { off(); } catch (e) { console.error('[AI bridge] sub cleanup failed', e); }
+      }
+    }
     session = {
       id:           'sess_' + Math.random().toString(36).slice(2, 10),
       caller:       data.caller || {},
@@ -70,6 +77,11 @@
       origin,
       subs:         new Map() // subscriptionId → unsubscribe()
     };
+    // Emit bridge.handshake into the eventBus so subscribers / transcript see it.
+    if (w.AppAPI && typeof w.AppAPI._emit === 'function') {
+      w.AppAPI._emit({ type: 'bridge.handshake', source: 'system',
+                       payload: { caller: session.caller, capabilities: granted } });
+    }
     send(target, {
       v: 1, type: 'ai.handshake.ack', requestId: data.requestId, ok: true,
       session: { id: session.id, page: w.getCurrentPage ? w.getCurrentPage() : 1,

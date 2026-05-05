@@ -10,9 +10,20 @@
   }
 
   class Page1Surface extends global.AIControlSurface {
+    constructor() { super(); this._eventBus = null; }
     get id()    { return ID; }
     get kind()  { return 'intro'; }
     get scope() { return { page: 1 }; }
+
+    attach(eventBus) { this._eventBus = eventBus; }
+    detach()         { this._eventBus = null; }
+
+    _emitPageChanged(from, to) {
+      if (this._eventBus && typeof this._eventBus.emit === 'function') {
+        this._eventBus.emit({ type: 'page.changed', source: 'ai',
+                              page: from, payload: { from, to } });
+      }
+    }
 
     getManifest() {
       const q = currentProblem();
@@ -78,6 +89,7 @@
       if (typeof global.changePageAndNotify === 'function') {
         global.changePageAndNotify(2);
       }
+      this._emitPageChanged(1, 2);
       return {
         ok: true,
         actionId: action.actionId,

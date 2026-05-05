@@ -4363,6 +4363,7 @@
 
       window.__longDivisionGridHandle = {
         applyDigit,
+        selectStartingDigit: (digitIndex) => handleSelectStartingDigit(digitIndex),
         getGuidedValues:    () => guidedValues,
         getGuidedValidation:() => guidedValidation,
         getGuidedSteps:     () => guidedSteps,
@@ -4377,7 +4378,7 @@
           delete window.__longDivisionGridHandle;
         }
       };
-    }, [applyDigit, guidedValues, guidedValidation, guidedSteps, guidedStepIndex,
+    }, [applyDigit, handleSelectStartingDigit, guidedValues, guidedValidation, guidedSteps, guidedStepIndex,
         dividend, divisor, selectedStartingDigits, mode]);
 
     const handleGuidedDigitClick = React.useCallback((digit) => {
