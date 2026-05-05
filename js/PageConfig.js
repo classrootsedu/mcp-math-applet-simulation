@@ -785,3 +785,44 @@ if (typeof module !== "undefined" && module.exports) {
 }
 
 console.log("🎉 PageConfig optimization complete!");
+
+// ===== AI SURFACE REGISTRATION =====
+// Surfaces register themselves whenever the active page changes.
+// Inert when window.AppAPI is not present (e.g. AI scaffolding not loaded).
+(function () {
+  if (typeof window === 'undefined') return;
+
+  function syncSurfaces(page) {
+    if (!window.AppAPI || !window.AppAPI._registry) return;
+
+    // Drop any surface from the previous page (registry's forPage filter is by scope,
+    // we only need the current page mounted at any time).
+    const list = window.AppAPI._registry.list();
+    for (const s of list) {
+      if (!s.scope || s.scope.page !== page) {
+        window.AppAPI._unregisterSurface(s.id);
+      }
+    }
+
+    // Mount fresh surfaces for the new page.
+    if (page === 1 && typeof window.Page1Surface === 'function') {
+      window.AppAPI._registerSurface(new window.Page1Surface());
+    } else if (page === 2 && typeof window.Page2Surface === 'function') {
+      window.AppAPI._registerSurface(new window.Page2Surface());
+    }
+  }
+
+  window.addEventListener('pageChanged', (e) => {
+    const page = (e && e.detail && e.detail.page) || 1;
+    syncSurfaces(page);
+  });
+
+  // Initial sync after applet boots (math-applet.js dispatches pageChanged on first nav).
+  // Belt-and-braces: also sync on DOMContentLoaded if no event has fired yet.
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      const cp = (typeof window.getCurrentPage === 'function') ? window.getCurrentPage() : 1;
+      syncSurfaces(cp);
+    }, 200);
+  });
+})();
