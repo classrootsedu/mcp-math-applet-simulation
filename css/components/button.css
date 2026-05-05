@@ -1,0 +1,429 @@
+/* ============================================================================
+ * BUTTON COMPONENT STYLES
+ * Navigation buttons, action buttons, and interactive elements
+ * ============================================================================ */
+
+/* ========================================
+ * THREE-LAYER BUTTON STRUCTURE
+ * Applet button system with container, frame, and content layers
+ * ======================================== */
+
+/* Layer 1: Button Container (Outer Shell) */
+.applet-button-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: var(--transition-normal);
+    font-weight: bold;
+    border-radius: var(--border-radius-xl);
+    box-sizing: border-box;
+    z-index: var(--z-button);
+    pointer-events: auto;
+}
+
+/* Layer 2: Button Frame (Decorative Frame) */
+.applet-button-frame {
+    position: absolute;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.3) 0%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(0, 0, 0, 0.1) 100%);
+    box-shadow: 
+        inset 0 1px 3px rgba(255, 255, 255, 0.3),
+        inset 0 -1px 3px rgba(0, 0, 0, 0.2),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+/* Layer 3: Button Content (Text/Content Layer) */
+.applet-button-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* font-size removed to allow inline styles to take precedence */
+    font-weight: bold;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: all 0.2s ease;
+}
+
+/* Next Button Three-Layer Styles */
+.next-button-container {
+    background-color: #FF9900;
+    border: none;
+    color: #000000;
+}
+
+.next-button-container:hover {
+    background-color: #FFB84D;
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.next-button-container:hover .applet-button-frame {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.4) 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        rgba(0, 0, 0, 0.15) 100%);
+    box-shadow: 
+        inset 0 1px 4px rgba(255, 255, 255, 0.4),
+        inset 0 -1px 4px rgba(0, 0, 0, 0.3),
+        0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.next-button-container:active {
+    transform: scale(0.98);
+}
+
+.next-button-container:active .applet-button-frame {
+    background: linear-gradient(135deg, 
+        rgba(0, 0, 0, 0.1) 0%, 
+        rgba(0, 0, 0, 0.2) 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.2);
+}
+
+.next-button-container.disabled {
+    background-color: var(--color-button-disabled);
+    border: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: var(--color-white);
+}
+
+/* Previous Button Three-Layer Styles */
+.previous-button-container {
+    background-color: #6699CC;
+    border: none;
+    color: #000000;
+}
+
+.previous-button-container:hover {
+    background-color: #7AA3D1;
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.previous-button-container:hover .applet-button-frame {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.4) 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        rgba(0, 0, 0, 0.15) 100%);
+    box-shadow: 
+        inset 0 1px 4px rgba(255, 255, 255, 0.4),
+        inset 0 -1px 4px rgba(0, 0, 0, 0.3),
+        0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.previous-button-container:active {
+    transform: scale(0.98);
+}
+
+.previous-button-container:active .applet-button-frame {
+    background: linear-gradient(135deg, 
+        rgba(0, 0, 0, 0.1) 0%, 
+        rgba(0, 0, 0, 0.2) 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.2);
+}
+
+.previous-button-container.disabled {
+    background-color: var(--color-button-disabled);
+    border: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: var(--color-white);
+}
+
+/* Pending State for Three-Layer Buttons */
+.applet-button-container.pending {
+    opacity: 0.7;
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+.applet-button-container.pending .applet-button-frame {
+    opacity: 0.8;
+}
+
+/* Page 2 Next Button Special Effects */
+.next-button-page2:not(.disabled) {
+    cursor: pointer;
+    opacity: 1;
+    animation: pulse 2s infinite, glow 2s infinite;
+    box-shadow: 0 0 20px rgba(255, 171, 64, 0.8), 0 0 40px rgba(255, 171, 64, 0.6);
+    filter: brightness(1.2);
+}
+
+.next-button-page2:not(.disabled) .applet-button-frame {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.5) 0%, 
+        rgba(255, 255, 255, 0.3) 50%, 
+        rgba(0, 0, 0, 0.2) 100%);
+    box-shadow: 
+        inset 0 1px 5px rgba(255, 255, 255, 0.5),
+        inset 0 -1px 5px rgba(0, 0, 0, 0.4),
+        0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Specific button name targeting for three-layer structure */
+.next-button-container,
+.next-button-page2-container {
+    background-color: #FF9900;
+    border: none;
+    color: #000000;
+}
+
+.previous-button-container,
+.previous-button-page2-container {
+    background-color: #6699CC;
+    border: none;
+    color: #000000;
+}
+
+/* Ensure proper z-index stacking for three-layer buttons */
+.applet-button-container {
+    z-index: var(--z-button);
+}
+
+.applet-button-frame {
+    z-index: 1;
+}
+
+.applet-button-content {
+    z-index: 2;
+}
+
+/* Ensure font size from inline styles takes precedence */
+.applet-button-content[style*="font-size"] {
+    /* Removed font-size: inherit !important; to allow processed font sizes to work */
+}
+
+/* ========================================
+ * QUIZ OPTION BUTTON STYLES
+ * Matching next button styling exactly
+ * ======================================== */
+
+/* Option button hover effects - DISABLED */
+/* .option-button-container:not([data-selected="true"]):hover {
+    background-color: #FFB84D !important;
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+} */
+
+/* Option button hover effects - frame layer - DISABLED */
+/* .option-button-container:not([data-selected="true"]):hover .option-button-frame {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.4) 0%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        rgba(0, 0, 0, 0.15) 100%);
+    box-shadow: 
+        inset 0 1px 4px rgba(255, 255, 255, 0.4),
+        inset 0 -1px 4px rgba(0, 0, 0, 0.3),
+        0 3px 6px rgba(0, 0, 0, 0.15);
+} */
+
+/* Option button active effects - container */
+.option-button-container:not([data-selected="true"]):active {
+    transform: scale(0.98);
+}
+
+/* Option button active effects - frame layer */
+.option-button-container:not([data-selected="true"]):active .option-button-frame {
+    background: linear-gradient(135deg, 
+        rgba(0, 0, 0, 0.1) 0%, 
+        rgba(0, 0, 0, 0.2) 50%, 
+        rgba(255, 255, 255, 0.1) 100%);
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 -1px 2px rgba(255, 255, 255, 0.2);
+}
+
+/* Selected option button - no hover/active effects */
+.option-button-container[data-selected="true"] {
+    pointer-events: none;
+    transition: none;
+}
+
+/* Smooth transitions for non-selected buttons */
+.option-button-container:not([data-selected="true"]) {
+    transition: transform 0.2s ease, background-color 0.3s ease, box-shadow 0.2s ease;
+}
+
+/* ========================================
+ * BASE BUTTON STYLES
+ * Common button styling and behavior
+ * ======================================== */
+
+.math-app-button,
+.next-button,
+.previous-button,
+[data-grid-position="next-button"],
+[data-grid-position="previous-button"] {
+    /* position: absolute; - REMOVED: Let grid positioning handle this */
+    z-index: var(--z-button);
+    pointer-events: auto;
+    cursor: pointer;
+    display: block;
+    border: none;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: var(--transition-normal);
+    font-weight: bold;
+    border-radius: var(--border-radius-xl);
+    box-sizing: border-box;
+}
+
+/* ========================================
+ * NEXT BUTTON STYLES
+ * Primary action button styling
+ * ======================================== */
+
+.math-app-button-next,
+.next-button,
+[data-grid-position="next-button"] {
+    background-color: var(--color-button-next);
+    border: none;
+    color: var(--color-black);
+}
+
+.math-app-button-next:hover,
+.next-button:hover,
+[data-grid-position="next-button"]:hover {
+    background-color: var(--color-button-next-hover);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.math-app-button-next:disabled,
+.next-button:disabled {
+    background-color: var(--color-button-disabled);
+    border: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+    color: var(--color-white);
+}
+
+/* ========================================
+ * PREVIOUS BUTTON STYLES
+ * Secondary action button styling
+ * ======================================== */
+
+.math-app-button-previous,
+.previous-button,
+[data-grid-position="previous-button"] {
+    background-color: var(--color-button-previous);
+    border: none;
+    color: var(--color-black);
+}
+
+.math-app-button-previous:hover,
+.previous-button:hover,
+[data-grid-position="previous-button"]:hover {
+    background-color: var(--color-button-previous-hover);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+/* ========================================
+ * SPECIAL BUTTON VARIANTS
+ * Page-specific button styling
+ * ======================================== */
+
+.math-app-button-previous-page1 {
+    background-color: var(--color-orange);
+    border-color: var(--color-orange-dark);
+}
+
+.next-button-page2:not([disabled]) {
+    cursor: pointer;
+    opacity: 1;
+    animation: pulse 2s infinite, glow 2s infinite;
+    box-shadow: 0 0 20px rgba(255, 171, 64, 0.8), 0 0 40px rgba(255, 171, 64, 0.6);
+    filter: brightness(1.2);
+}
+
+/* ========================================
+ * BUTTON STATES
+ * Button interaction states and effects
+ * ======================================== */
+
+.math-app-button.pending {
+    opacity: 0.7;
+    transform: scale(0.95);
+    transition: all 0.2s ease;
+}
+
+.math-app-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ========================================
+ * BUTTON CLICKABILITY OVERRIDES
+ * Ensures buttons remain functional despite layout changes
+ * ======================================== */
+
+[data-grid-position="next-button"],
+.main-container [data-grid-position="next-button"],
+*[data-grid-position="next-button"],
+div[data-grid-position="next-button"],
+button[data-grid-position="next-button"] {
+    position: absolute;
+    display: block;
+    visibility: visible;
+    z-index: var(--z-button);
+    pointer-events: auto;
+    cursor: pointer;
+    isolation: isolate;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    transform: none;
+    contain: none;
+}
+
+[data-grid-position="previous-button"],
+.main-container [data-grid-position="previous-button"],
+*[data-grid-position="previous-button"],
+div[data-grid-position="previous-button"],
+button[data-grid-position="previous-button"] {
+    /* position: absolute; - REMOVED: Let grid positioning handle this */
+    display: block;
+    visibility: visible;
+    z-index: var(--z-button);
+    pointer-events: auto;
+    cursor: pointer;
+    isolation: isolate;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    transform: none;
+    contain: none;
+}

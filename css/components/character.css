@@ -1,0 +1,73 @@
+/* ============================================================================
+ * CHARACTER COMPONENT STYLES
+ * Character display, images, and visual elements
+ * ============================================================================ */
+
+/* ========================================
+ * CHARACTER CONTAINER
+ * Main character layout and positioning
+ * ======================================== */
+
+.character-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-content);
+}
+
+.character-container[data-grid-position] {
+    position: absolute;
+    z-index: var(--z-content);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ========================================
+ * CHARACTER IMAGE
+ * Character image styling and effects
+ * ======================================== */
+
+.character-image {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+    border: 3px solid transparent;
+    border-radius: var(--border-radius-md);
+    margin: 0;
+    padding: 0;
+    display: block;
+    box-sizing: border-box;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* ========================================
+ * CHARACTER LOADING STATES
+ * Loading and transition effects
+ * ======================================== */
+
+.character-container .character-image.loading {
+    opacity: 0;
+}
+
+.character-container .character-image.loaded {
+    opacity: 1;
+}
+
+/* ========================================
+ * CHARACTER ANIMATIONS
+ * Character-specific animations and effects
+ * ======================================== */
+
+.character-container:hover .character-image {
+    transform: scale(1.02);
+    transition: transform 0.3s ease;
+}
+
+.character-container .character-image {
+    transition: all 0.3s ease;
+}

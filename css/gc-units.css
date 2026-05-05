@@ -1,0 +1,325 @@
+/* GC UNITS CSS SYSTEM
+ * ===================
+ * Uses grid cell (gc) units for consistent sizing
+ * 1gc = 1 cell when precision is 10 (160x90 grid)
+ * This file is dynamically updated by JavaScript
+ */
+
+/* Dynamic GC Unit Variables - Updated by JavaScript */
+:root {
+    /* Font Sizes in GC Units */
+    --gc-font-tiny: 12px;      /* 1gc */
+    --gc-font-small: 24px;     /* 2gc */
+    --gc-font-medium: 36px;    /* 3gc */
+    --gc-font-large: 48px;     /* 4gc */
+    --gc-font-xlarge: 60px;    /* 5gc */
+    
+    /* Spacing in GC Units */
+    --gc-spacing-xs: 6px;      /* 0.5gc */
+    --gc-spacing-sm: 12px;     /* 1gc */
+    --gc-spacing-md: 24px;     /* 2gc */
+    --gc-spacing-lg: 36px;     /* 3gc */
+    --gc-spacing-xl: 48px;     /* 4gc */
+    
+    /* Border Radius in GC Units */
+    --gc-border-radius-sm: 6px;    /* 0.5gc */
+    --gc-border-radius-md: 12px;   /* 1gc */
+    --gc-border-radius-lg: 24px;   /* 2gc */
+    
+    /* Icon Sizes in GC Units */
+    --gc-icon-sm: 18px;        /* 1.5gc */
+    --gc-icon-md: 24px;        /* 2gc */
+    --gc-icon-lg: 36px;        /* 3gc */
+    
+    /* Button Sizes in GC Units */
+    --gc-button-padding-x: 24px;  /* 2gc */
+    --gc-button-padding-y: 12px;  /* 1gc */
+    --gc-button-height: 48px;     /* 4gc */
+    
+    /* Dialog Box Sizes in GC Units */
+    --gc-dialog-padding: 24px;    /* 2gc */
+    --gc-dialog-min-width: 240px; /* 20gc */
+    --gc-dialog-min-height: 120px; /* 10gc */
+}
+
+/* Font Size Classes using GC Units */
+.gc-font-tiny {
+    font-size: var(--gc-font-tiny);
+}
+
+.gc-font-small {
+    font-size: var(--gc-font-small);
+}
+
+.gc-font-medium {
+    font-size: var(--gc-font-medium);
+}
+
+.gc-font-large {
+    font-size: var(--gc-font-large);
+}
+
+.gc-font-xlarge {
+    font-size: var(--gc-font-xlarge);
+}
+
+/* Spacing Classes using GC Units */
+.gc-spacing-xs {
+    padding: var(--gc-spacing-xs);
+}
+
+.gc-spacing-sm {
+    padding: var(--gc-spacing-sm);
+}
+
+.gc-spacing-md {
+    padding: var(--gc-spacing-md);
+}
+
+.gc-spacing-lg {
+    padding: var(--gc-spacing-lg);
+}
+
+.gc-spacing-xl {
+    padding: var(--gc-spacing-xl);
+}
+
+/* Margin Classes using GC Units */
+.gc-margin-xs {
+    margin: var(--gc-spacing-xs);
+}
+
+.gc-margin-sm {
+    margin: var(--gc-spacing-sm);
+}
+
+.gc-margin-md {
+    margin: var(--gc-spacing-md);
+}
+
+.gc-margin-lg {
+    margin: var(--gc-spacing-lg);
+}
+
+.gc-margin-xl {
+    margin: var(--gc-spacing-xl);
+}
+
+/* Border Radius Classes using GC Units */
+.gc-border-radius-sm {
+    border-radius: var(--gc-border-radius-sm);
+}
+
+.gc-border-radius-md {
+    border-radius: var(--gc-border-radius-md);
+}
+
+.gc-border-radius-lg {
+    border-radius: var(--gc-border-radius-lg);
+}
+
+/* Icon Size Classes using GC Units */
+.gc-icon-sm {
+    width: var(--gc-icon-sm);
+    height: var(--gc-icon-sm);
+}
+
+.gc-icon-md {
+    width: var(--gc-icon-md);
+    height: var(--gc-icon-md);
+}
+
+.gc-icon-lg {
+    width: var(--gc-icon-lg);
+    height: var(--gc-icon-lg);
+}
+
+/* Button Styles using GC Units */
+.gc-button {
+    padding: var(--gc-button-padding-y) var(--gc-button-padding-x);
+    font-size: var(--gc-font-medium);
+    border-radius: var(--gc-border-radius-md);
+    min-height: var(--gc-button-height);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gc-spacing-sm);
+    transition: all 0.2s ease;
+}
+
+.gc-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.gc-button:active {
+    transform: translateY(0);
+}
+
+/* Dialog Box Styles using GC Units */
+.gc-dialog {
+    padding: var(--gc-dialog-padding);
+    font-size: var(--gc-font-medium);
+    border-radius: var(--gc-border-radius-lg);
+    min-width: var(--gc-dialog-min-width);
+    min-height: var(--gc-dialog-min-height);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.gc-dialog .gc-dialog-title {
+    font-size: var(--gc-font-large);
+    font-weight: bold;
+    margin-bottom: var(--gc-spacing-md);
+}
+
+.gc-dialog .gc-dialog-content {
+    line-height: 1.6;
+}
+
+/* Character Container using GC Units */
+.gc-character-container {
+    padding: var(--gc-spacing-md);
+}
+
+.gc-character-container .character-image {
+    border-radius: var(--gc-border-radius-md);
+    transition: transform 0.3s ease;
+}
+
+.gc-character-container .character-image:hover {
+    transform: scale(1.05);
+}
+
+/* Grid Element Styles using GC Units */
+.gc-grid-element {
+    border-radius: var(--gc-border-radius-md);
+    transition: all 0.3s ease;
+}
+
+.gc-grid-element:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Activity Card using GC Units */
+.gc-activity-card {
+    padding: var(--gc-spacing-lg);
+    border-radius: var(--gc-border-radius-lg);
+    font-size: var(--gc-font-medium);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.gc-activity-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.gc-activity-card.selected {
+    border-color: var(--clr-blue);
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+.gc-activity-card .title {
+    font-size: var(--gc-font-large);
+    font-weight: bold;
+    margin-bottom: var(--gc-spacing-sm);
+}
+
+.gc-activity-card .description {
+    font-size: var(--gc-font-small);
+    color: #666;
+    line-height: 1.5;
+}
+
+/* Progress Bar using GC Units */
+.gc-progress-bar {
+    height: var(--gc-spacing-md);
+    border-radius: var(--gc-border-radius-md);
+    overflow: hidden;
+    background-color: #e0e0e0;
+}
+
+.gc-progress-bar .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--clr-green), var(--clr-blue));
+    transition: width 0.3s ease;
+    border-radius: var(--gc-border-radius-md);
+}
+
+/* Score Display using GC Units */
+.gc-score-display {
+    font-size: var(--gc-font-xlarge);
+    font-weight: bold;
+    padding: var(--gc-spacing-md);
+    border-radius: var(--gc-border-radius-lg);
+    background: linear-gradient(135deg, var(--clr-gold), var(--clr-yellow));
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--gc-spacing-sm);
+}
+
+/* Menu Grid using GC Units */
+.gc-menu-grid {
+    display: grid;
+    gap: var(--gc-spacing-md);
+    padding: var(--gc-spacing-lg);
+}
+
+.gc-menu-grid.grid-2x2 {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+}
+
+.gc-menu-grid.grid-3x3 {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+}
+
+.gc-menu-grid .menu-item {
+    padding: var(--gc-spacing-lg);
+    border-radius: var(--gc-border-radius-lg);
+    font-size: var(--gc-font-medium);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: var(--gc-spacing-sm);
+}
+
+.gc-menu-grid .menu-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Feedback Area using GC Units */
+.gc-feedback-area {
+    padding: var(--gc-spacing-lg);
+    border-radius: var(--gc-border-radius-lg);
+    font-size: var(--gc-font-medium);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.gc-feedback-area.success {
+    background-color: var(--clr-green-light);
+    color: var(--clr-green-dark);
+}
+
+.gc-feedback-area.error {
+    background-color: var(--clr-pink-light);
+    color: var(--clr-pink-dark);
+}
+
+.gc-feedback-area .feedback-icon {
+    font-size: var(--gc-font-xlarge);
+    margin-bottom: var(--gc-spacing-sm);
+}

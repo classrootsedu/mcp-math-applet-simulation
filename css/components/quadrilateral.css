@@ -1,0 +1,392 @@
+/**
+ * Quadrilateral Component Styles
+ * 
+ * Styles for the quadrilateral visualization system including:
+ * - Grid backgrounds
+ * - Angle markers (arcs and squares)
+ * - Property indicators
+ * - Property panel
+ * - Dragging states and animations
+ */
+
+/* ============================================================================
+ * QUADRILATERAL CONTAINER
+ * ============================================================================ */
+
+.quadrilateral-component {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+/* Grid background */
+.quadrilateral-grid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================================
+ * ANGLE MARKERS
+ * ============================================================================ */
+
+.angle-marker {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Right angle square */
+.angle-marker-right-square {
+  position: absolute;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* Arc SVG container */
+.angle-marker-arc {
+  position: absolute;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.angle-marker-arc path {
+  vector-effect: non-scaling-stroke;
+}
+
+/* Angle degree label */
+.angle-marker-label {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  font-family: Arial, sans-serif;
+  line-height: 1;
+  text-align: center;
+}
+
+/* Angle type specific styles */
+.angle-marker-right {
+  /* Right angles use squares */
+}
+
+.angle-marker-acute {
+  /* Acute angles < 90° */
+}
+
+.angle-marker-obtuse {
+  /* Obtuse angles > 90° */
+}
+
+/* ============================================================================
+ * PROPERTY INDICATORS
+ * ============================================================================ */
+
+.property-indicator {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Parallel arrows */
+.property-indicator-arrow {
+  position: absolute;
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+/* Equal sides tick marks */
+.property-indicator-tick {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 1px;
+}
+
+/* Perpendicular square symbol */
+.property-indicator-perpendicular {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+/* Symmetry line (dashed) */
+.property-indicator-symmetry {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* ============================================================================
+ * PROPERTY PANEL
+ * ============================================================================ */
+
+.property-panel {
+  position: absolute;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+  user-select: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Smooth scrollbar for property panel */
+.property-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.property-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.property-panel::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.property-panel::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Panel title */
+.property-panel .panel-title {
+  user-select: text;
+}
+
+/* Category sections */
+.property-panel .property-category {
+  margin-bottom: 15px;
+}
+
+.property-panel .category-title {
+  user-select: text;
+}
+
+/* Property rows */
+.property-panel .property-row {
+  transition: background-color 0.2s ease;
+}
+
+.property-panel .property-row:hover {
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+}
+
+.property-panel .property-icon {
+  flex-shrink: 0;
+}
+
+.property-panel .property-label {
+  user-select: text;
+}
+
+.property-panel .property-value {
+  user-select: text;
+  white-space: nowrap;
+}
+
+/* ============================================================================
+ * VERTEX HOTSPOTS (Draggable)
+ * ============================================================================ */
+
+/* Vertices with dragging enabled */
+.quadrilateral-component [data-hotspot="true"] {
+  transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.quadrilateral-component [data-hotspot="true"]:hover {
+  transform: translate(-50%, -50%) scale(1.15) !important;
+  box-shadow: 0 0 15px rgba(255, 102, 0, 0.6);
+  cursor: move;
+}
+
+.quadrilateral-component [data-hotspot="true"]:active {
+  transform: translate(-50%, -50%) scale(1.05) !important;
+  box-shadow: 0 0 20px rgba(255, 102, 0, 0.8);
+  cursor: grabbing;
+}
+
+/* ============================================================================
+ * SIDES AND DIAGONALS
+ * ============================================================================ */
+
+.quadrilateral-component .line-component {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Sides (solid lines) */
+.quadrilateral-component .line-component.line-slanted {
+  transition: all 0.2s ease;
+}
+
+/* Diagonals (typically dashed) */
+.quadrilateral-component [id*="diagonal"] {
+  opacity: 0.8;
+}
+
+/* ============================================================================
+ * ANIMATIONS
+ * ============================================================================ */
+
+/* Fade in animation for new elements */
+@keyframes quadFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.quadrilateral-component {
+  animation: quadFadeIn 0.3s ease-out;
+}
+
+/* Pulse animation for property indicators */
+@keyframes indicatorPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.property-indicator-arrow,
+.property-indicator-tick {
+  animation: indicatorPulse 2s ease-in-out infinite;
+}
+
+/* Smooth morphing animation when vertices move */
+.quadrilateral-component.morphing .line-component {
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.quadrilateral-component.morphing .angle-marker {
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.quadrilateral-component.morphing .property-indicator {
+  transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* ============================================================================
+ * RESPONSIVE ADJUSTMENTS
+ * ============================================================================ */
+
+/* Small screens */
+@media (max-width: 768px) {
+  .property-panel {
+    font-size: 12px !important;
+    padding: 10px !important;
+  }
+  
+  .angle-marker-label {
+    font-size: 10px !important;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .property-panel {
+    font-size: 10px !important;
+    padding: 8px !important;
+  }
+  
+  .property-panel .property-row {
+    margin-bottom: 6px !important;
+  }
+  
+  .angle-marker-label {
+    font-size: 9px !important;
+    padding: 1px 2px !important;
+  }
+}
+
+/* ============================================================================
+ * UTILITY CLASSES
+ * ============================================================================ */
+
+/* Hide elements */
+.quadrilateral-hidden {
+  display: none !important;
+}
+
+/* Disable interactions */
+.quadrilateral-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Highlight mode (for educational purposes) */
+.quadrilateral-highlight .property-indicator {
+  animation: indicatorPulse 1s ease-in-out infinite;
+}
+
+.quadrilateral-highlight [data-hotspot="true"] {
+  animation: indicatorPulse 1.5s ease-in-out infinite;
+}
+
+/* Print styles */
+@media print {
+  .property-panel {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  
+  .quadrilateral-component [data-hotspot="true"] {
+    background-color: #000 !important;
+  }
+  
+  .angle-marker-label {
+    background-color: #fff !important;
+  }
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* Focus styles for keyboard navigation */
+.quadrilateral-component [data-hotspot="true"]:focus {
+  outline: 3px solid #0066CC;
+  outline-offset: 2px;
+}
+
+.property-panel:focus {
+  outline: 2px solid #0066CC;
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .quadrilateral-component,
+  .quadrilateral-component *,
+  .property-indicator-arrow,
+  .property-indicator-tick {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .property-panel {
+    border-width: 3px !important;
+  }
+  
+  .angle-marker-arc path {
+    stroke-width: 3 !important;
+  }
+  
+  .property-indicator-arrow,
+  .property-indicator-tick,
+  .property-indicator-perpendicular {
+    border-width: 3px !important;
+  }
+}
+

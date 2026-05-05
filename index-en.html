@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Math Learning Applet</title>
+    <script>
+        // Set dynamic title based on language
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                if (typeof i18n !== 'undefined') {
+                    document.title = i18n.t('appInfo.title');
+                }
+            }, 1000);
+        });
+    </script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧮</text></svg>">
+    <link rel="stylesheet" href="css/core.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/components/header.css">
+    <link rel="stylesheet" href="css/components/dialog.css">
+    <link rel="stylesheet" href="css/components/character.css">
+    <link rel="stylesheet" href="css/components/button.css">
+    <link rel="stylesheet" href="css/components/progress.css">
+    <link rel="stylesheet" href="css/components/number-pad.css">
+    <link rel="stylesheet" href="css/components/container.css">
+    <link rel="stylesheet" href="css/components/grid.css">
+    <link rel="stylesheet" href="css/components/quiz-panel.css">
+    <link rel="stylesheet" href="css/components/utilities.css">
+    <link rel="stylesheet" href="css/components/multiplication-grid.css">
+    <link rel="stylesheet" href="css/components/long-division-grid.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/gc-units.css">
+</head>
+<body>
+    <div id="react-root"></div>
+    
+    <!-- Language selector removed - language detection is automatic or can be set programmatically -->
+    
+    <!-- Animation library (offline) -->
+    <script src="js/anime.min.js"></script>
+    
+    <!-- React development files (offline version) -->
+    <script src="js/react.development.js"></script>
+    <script src="js/react-dom.development.js"></script>
+
+    <!-- Load data.js and constants.js first for i18n and configuration -->
+    <script src="js/data.js"></script>
+    <script src="js/constants.js"></script>
+    
+    <!-- APP CONFIGURATION - Must be before PageConfig.js -->
+    <script>
+        // ====================================
+        // APP CONFIGURATION
+        // ====================================
+        // 
+        // QUICK LANGUAGE SETUP:
+        // To force English: Set FORCE_LANGUAGE to 'en'
+        // To force Indonesian: Set FORCE_LANGUAGE to 'id'
+        // To use auto-detection: Set FORCE_LANGUAGE to null
+        // 
+        const APP_CONFIG = {
+            // UI Elements visibility
+            // Set to 'false' to hide question dropdown and page progress indicator
+            SHOW_QUESTION_DROPDOWN: false,
+            SHOW_PAGE_PROGRESS: true,
+            
+            // Grid System
+            // Set to 'true' to show grid overlay by default on page load
+            // Set to 'false' to hide grid overlay by default (can still be toggled with Ctrl+G)
+            SHOW_GRID_DEFAULT: true,
+            
+            // Language Settings
+            // Set FORCE_LANGUAGE to 'en' or 'id' to force a specific language
+            // Set to null to use auto-detection (browser language + saved preference)
+            FORCE_LANGUAGE: 'en', // Options: 'en', 'id', or null
+            
+            // Supported languages (only English and Indonesian)
+            SUPPORTED_LANGUAGES: ['en', 'id'],
+            
+            // Default language if no preference is found
+            DEFAULT_LANGUAGE: 'en',
+            
+            // Starting Page
+            // Set to a specific page number (1, 2, 3, etc.) to start the app on that page
+            // Set to null or 1 to start from the first page
+            START_PAGE: 1 // Options: 1, 2, 3, etc., or null for default (page 1)
+        };
+        
+        // Set language immediately BEFORE PageConfig.js loads
+        (function() {
+            let langToUse;
+            
+            // Check if language is forced in configuration
+            if (APP_CONFIG.FORCE_LANGUAGE && APP_CONFIG.SUPPORTED_LANGUAGES.includes(APP_CONFIG.FORCE_LANGUAGE)) {
+                langToUse = APP_CONFIG.FORCE_LANGUAGE;
+                console.log(`🌐 Language forced to: ${langToUse}`);
+            } else {
+                // Auto-detect language from browser or use saved preference
+                const browserLang = navigator.language.startsWith('id') ? 'id' : 'en';
+                const savedLang = localStorage.getItem('appLanguage') || browserLang || APP_CONFIG.DEFAULT_LANGUAGE;
+                
+                // Ensure it's a supported language
+                langToUse = APP_CONFIG.SUPPORTED_LANGUAGES.includes(savedLang) ? savedLang : APP_CONFIG.DEFAULT_LANGUAGE;
+                console.log(`🌐 Language auto-detected: ${langToUse}`);
+            }
+            
+            // Set the language in the i18n system immediately
+            if (typeof i18n !== 'undefined' && typeof i18n.setLanguage === 'function') {
+                i18n.setLanguage(langToUse);
+            } else {
+                // If i18n not loaded yet, set it directly
+                if (typeof AppData !== 'undefined') {
+                    AppData.currentLanguage = langToUse;
+                    console.log(`🌐 Language set directly to: ${langToUse}`);
+                }
+            }
+        })();
+        
+        // Make APP_CONFIG globally available
+        window.APP_CONFIG = APP_CONFIG;
+    </script>
+    
+    <!-- Core dependencies (load order is important) -->
+    <script src="js/GridPrecisionConfig.js"></script>
+    <script src="js/GridCellFontUtils.js"></script>
+    
+    <!-- Quadrilateral configuration (must load before components) -->
+    <script src="js/quadrilateral-config.js"></script>
+    
+    <!-- Components (load in order) -->
+    <script src="js/components/shared-utilities.js"></script>
+    <script src="js/components/layout-components.js"></script>
+    <script src="js/components/interaction-components.js"></script>
+    <script src="js/components/progress-components.js"></script>
+    <script src="js/components/partitioned-rectangle-component.js"></script>
+    <script src="js/components/number-pad-component.js"></script>
+    <script src="js/components/table-grid-component.js"></script>
+    <script src="js/components/tile-component.js"></script>
+    <script src="js/components/hotspot-component.js"></script>
+    <script src="js/components/line-component.js"></script>
+    <script src="js/components/fill-blanks-component.js"></script>
+    <script src="js/components/feedback-textbox-component.js"></script>
+    <script src="js/components/drag-drop-component.js"></script>
+    <script src="js/components/draggable-component.js"></script>
+    <script src="js/components/arrange-steps-component.js"></script>
+    <script src="js/components/solution-step-component.js"></script>
+    <script src="js/components/stage-component.js"></script>
+    <script src="js/components/calculation-steps-component.js"></script>
+    
+    <!-- Quadrilateral system components -->
+    <script src="js/components/angle-marker-component.js"></script>
+    <script src="js/components/property-indicator-component.js"></script>
+    <script src="js/components/property-panel-component.js"></script>
+    <script src="js/components/quadrilateral-component.js"></script>
+    <script src="js/components/image-stack-component.js"></script>
+    
+    <!-- Multiplication Grid Component -->
+    <script src="js/components/multiplication-grid-component.js"></script>
+    
+    <!-- Long Division Grid Component -->
+    <script src="js/components/long-division-grid-component.js"></script>
+    <script src="js/components/long-addition-grid-component.js"></script>
+    <script src="js/components/long-subtraction-grid-component.js"></script>
+    
+    <script src="js/components/elements-registry.js"></script>
+    <script src="js/components/index.js"></script>
+    
+    <!-- Page State Management (load before PageConfig) -->
+    <script src="js/simple-sound-manager.js"></script>
+    
+    <script src="js/PageConfig.js"></script>
+    <script src="js/gridpositions.js"></script>
+    
+    <!-- Other utilities -->
+
+    
+    <!-- Main app -->
+    <script src="js/math-applet.js"></script>
+    
+    <script>
+        // Additional initialization on DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize i18n system with APP_CONFIG available
+            if (typeof i18n !== 'undefined' && typeof i18n.initLanguage === 'function') {
+                i18n.initLanguage();
+            }
+            
+            // Save language preference
+            window.addEventListener('beforeunload', function() {
+                if (typeof i18n !== 'undefined' && typeof i18n.getCurrentLanguage === 'function') {
+                    localStorage.setItem('appLanguage', i18n.getCurrentLanguage());
+                }
+            });
+            
+            // Initialize App (Simplified)
+            setTimeout(() => {
+                console.log('Math Learning Applet initialized!');
+                console.log('Supported languages:', APP_CONFIG.SUPPORTED_LANGUAGES.join(', '));
+                console.log('Use setAppLanguage("en") or setAppLanguage("id") to change language');
+            }, 1000);
+        });
+        
+        // Utility function to change language programmatically (for debugging)
+        window.setAppLanguage = function(langCode) {
+            if (APP_CONFIG.SUPPORTED_LANGUAGES.includes(langCode)) {
+                if (typeof i18n !== 'undefined' && i18n.setLanguage(langCode)) {
+                    console.log(`🌐 Manual language change to: ${langCode}`);
+                    location.reload();
+                    return true;
+                }
+            }
+            console.warn(`Language '${langCode}' not supported. Supported languages:`, APP_CONFIG.SUPPORTED_LANGUAGES);
+            return false;
+        };
+    </script>
+</body>
+</html>

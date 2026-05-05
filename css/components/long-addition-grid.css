@@ -1,0 +1,626 @@
+/**
+ * Long Addition Grid Component Styles
+ * 
+ * Styles for the long addition visualization component
+ * with support for multiple interactive modes.
+ */
+
+/* ===== BASE CONTAINER ===== */
+
+.long-addition-grid {
+  position: relative;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* ===== ROW STYLES ===== */
+
+.add-row {
+  display: flex;
+  align-items: center;
+}
+
+.add-carry-row {
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.add-carry-row::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: rgba(255, 152, 0, 0.3);
+  border-bottom: 1px dashed rgba(255, 152, 0, 0.5);
+}
+
+.add-addend-row {
+  margin-bottom: 2px;
+}
+
+.add-sum-row {
+  margin-top: 2px;
+}
+
+.add-place-value-row {
+  margin-bottom: 6px;
+}
+
+.add-place-value-label {
+  font-weight: bold;
+  color: #666;
+  text-align: center;
+  user-select: none;
+  opacity: 0.8;
+}
+
+/* ===== CELL STYLES ===== */
+
+.add-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.add-cell-carry {
+  color: #FF9800;
+  background-color: rgba(255, 152, 0, 0.15);
+  border: 1px dashed rgba(255, 152, 0, 0.4);
+  font-size: 0.85em;
+  min-height: auto;
+  padding: 2px 0;
+  opacity: 0.9;
+}
+
+.add-cell-addend {
+  color: #4ECDC4;
+  background-color: rgba(78, 205, 196, 0.1);
+}
+
+.add-cell-sum {
+  color: #E91E63;
+  background-color: rgba(233, 30, 99, 0.1);
+}
+
+/* ===== LINE STYLES ===== */
+
+.add-line {
+  background-color: #333;
+}
+
+/* ===== INPUT STYLES ===== */
+
+.add-cell-input,
+.add-cell-practice,
+.add-cell-guided-active {
+  outline: none;
+  text-align: center;
+  font-family: inherit;
+}
+
+.add-cell-input:focus,
+.add-cell-practice:focus,
+.add-cell-guided-active:focus {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+}
+
+/* ===== SPOTINCORRECT MODE ===== */
+
+.long-addition-grid[data-mode="spotIncorrect"] .add-cell {
+  cursor: pointer;
+}
+
+.long-addition-grid[data-mode="spotIncorrect"] .add-cell:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== BUTTON THEME (for spotIncorrect mode) ===== */
+
+.add-cell-button-theme {
+  background: linear-gradient(145deg, #FFD700, #E6C200);
+  border: 2px solid #B8860B;
+  border-radius: 8px;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.4),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+  transition: all 0.1s ease;
+  position: relative;
+  transform: translateY(0);
+}
+
+.add-cell-button-theme:hover {
+  background: linear-gradient(145deg, #FFE55C, #FFD700);
+  box-shadow: 
+    6px 6px 12px rgba(0, 0, 0, 0.4),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.5),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.add-cell-button-theme:active {
+  background: linear-gradient(145deg, #E6C200, #CCB000);
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(0, 0, 0, 0.2),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.1);
+  transform: translateY(1px);
+}
+
+.add-cell-button-theme.selected {
+  background: linear-gradient(145deg, #2196F3, #1976D2);
+  color: black;
+  box-shadow: 
+    0 0 0 2px rgba(33, 150, 243, 0.8),
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.4),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.add-cell-button-theme.correct {
+  background: linear-gradient(145deg, #4CAF50, #45A049);
+  border-color: #2E7D32;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.add-cell-button-theme.incorrect {
+  background: linear-gradient(145deg, #FF6B6B, #E53E3E);
+  border-color: #D32F2F;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+  animation: wiggle 0.5s ease-in-out;
+}
+
+.add-cell-button-theme.disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.add-cell-button-theme.disabled:hover,
+.add-cell-button-theme.disabled:active {
+  /* No effects for disabled cells */
+}
+
+/* Wiggle animation for incorrect drops */
+@keyframes wiggle {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  10% { transform: translateX(-8px) rotate(-3deg); }
+  20% { transform: translateX(8px) rotate(3deg); }
+  30% { transform: translateX(-8px) rotate(-3deg); }
+  40% { transform: translateX(8px) rotate(3deg); }
+  50% { transform: translateX(-8px) rotate(-3deg); }
+  60% { transform: translateX(8px) rotate(3deg); }
+  70% { transform: translateX(-8px) rotate(-3deg); }
+  80% { transform: translateX(8px) rotate(3deg); }
+  90% { transform: translateX(-8px) rotate(-3deg); }
+  100% { transform: translateX(0) rotate(0); }
+}
+
+/* ===== PRACTICE MODE ===== */
+
+.long-addition-grid[data-mode="practice"] {
+  border: 2px solid #2196F3;
+}
+
+.add-cell-practice {
+  background-color: #F5F5F5;
+  border: 2px dashed #9E9E9E;
+}
+
+.add-cell-practice:focus {
+  border-color: #2196F3;
+  background-color: white;
+}
+
+/* ===== GUIDED MODE ===== */
+
+.long-addition-grid[data-mode="guided"] {
+  border: 2px solid #FFC107;
+}
+
+.add-cell-guided-active {
+  background-color: #FFF9C4 !important;
+  border: 3px solid #FFC107 !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+  animation: guidedPulse 1.5s ease-in-out infinite;
+}
+
+.add-cell-wiggling {
+  background-color: #FA8072 !important;
+  border: 3px solid #FF6B6B !important;
+  box-shadow: 0 0 10px rgba(250, 128, 114, 0.5);
+  animation: wiggle 1500ms ease-in-out;
+}
+
+.add-cell-hidden {
+  background-color: transparent !important;
+  border: 2px dashed #E0E0E0 !important;
+  color: transparent !important;
+}
+
+.add-guided-hint {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes guidedPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
+  }
+}
+
+/* ===== ANIMATION MODE ===== */
+
+.long-addition-grid[data-mode="animation"] {
+  border: 2px solid #673AB7;
+}
+
+.add-cell-animation-hidden {
+  background-color: transparent !important;
+  border: 2px dashed #E0E0E0 !important;
+  color: transparent !important;
+}
+
+.add-animation-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.add-animation-controls button {
+  transition: all 0.2s ease;
+}
+
+.add-animation-controls button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.add-animation-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-animation-info {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes digitAppear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes digitFade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Flying carry animation */
+.add-flying-carry {
+  position: fixed;
+  font-weight: bold;
+  color: #FF6B00;
+  background: linear-gradient(145deg, rgba(255, 152, 0, 0.9), rgba(255, 107, 0, 0.8));
+  border: 3px solid #FF6B00;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(255, 107, 0, 0.8);
+  font-size: 1.2em;
+  width: 50px;
+  height: 50px;
+  transition: none;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes flyToCarry {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.2),
+      calc(var(--end-y) * 0.1 - 15px)
+    ) scale(1.3) rotate(5deg);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.5),
+      calc(var(--end-y) * 0.3 - 20px)
+    ) scale(1.4) rotate(-5deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.75),
+      calc(var(--end-y) * 0.6 - 10px)
+    ) scale(1.3) rotate(3deg);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.9),
+      calc(var(--end-y) * 0.85 - 5px)
+    ) scale(1.1) rotate(-2deg);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--end-x), var(--end-y)) scale(1) rotate(0deg);
+    opacity: 0.3;
+  }
+}
+
+/* Cascading bounce animation for addition */
+.add-bouncing-digit {
+  position: fixed;
+  font-weight: bold;
+  color: #673AB7;
+  background: linear-gradient(145deg, #EDE7F6, #D1C4E9);
+  border: 3px solid #673AB7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  box-shadow: 0 4px 20px rgba(103, 58, 183, 0.6);
+  font-size: 1.4em;
+  width: 50px;
+  height: 50px;
+  transition: none;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes bounceDown {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.2),
+      calc(var(--end-y) * 0.1)
+    ) scale(1.2) rotate(3deg);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.5),
+      calc(var(--end-y) * 0.3)
+    ) scale(1.35) rotate(-4deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.75),
+      calc(var(--end-y) * 0.6)
+    ) scale(1.25) rotate(2deg);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.9),
+      calc(var(--end-y) * 0.85)
+    ) scale(1.1) rotate(-1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--end-x), var(--end-y)) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes impactPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(103, 58, 183, 0.5);
+  }
+  30% {
+    transform: scale(1.25);
+    box-shadow: 0 0 30px rgba(103, 58, 183, 1);
+  }
+  60% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(103, 58, 183, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(103, 58, 183, 0.5);
+  }
+}
+
+.add-cell-impact {
+  animation: impactPulse 400ms ease-in-out;
+}
+
+/* ===== DRAGDROP MODE ===== */
+
+.long-addition-grid[data-mode="dragDrop"] {
+  border: 2px solid #9C27B0;
+}
+
+.add-cell-dragdrop {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.add-cell-dragdrop:hover {
+  background-color: #E1F5FE !important;
+  border-color: #0288D1 !important;
+}
+
+.add-digit-tile {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.add-digit-tile:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+  background-color: #BBDEFB !important;
+}
+
+.add-digit-tile:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.add-dragdrop-digit-bank {
+  animation: fadeIn 0.3s ease;
+}
+
+.add-dragdrop-controls {
+  margin-top: 15px;
+}
+
+.add-dragdrop-controls button {
+  transition: all 0.2s ease;
+}
+
+.add-dragdrop-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== INPUT MODE ===== */
+
+.long-addition-grid[data-mode="input"] {
+  border: 2px solid #4CAF50;
+}
+
+/* ===== COMMON ANIMATIONS ===== */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== VALIDATION STATES ===== */
+
+.add-cell-correct {
+  background-color: #C8E6C9 !important;
+  border-color: #4CAF50 !important;
+}
+
+.add-cell-incorrect {
+  background-color: #FFCDD2 !important;
+  border-color: #F44336 !important;
+}
+
+.add-cell-missed {
+  background-color: #FFF9C4 !important;
+  border-color: #FFC107 !important;
+}
+
+/* ===== COMPLETION MESSAGES ===== */
+
+.add-complete-message {
+  animation: fadeInUp 0.5s ease;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+
+@media (max-width: 768px) {
+  .long-addition-grid {
+    padding: 10px;
+  }
+  
+  .add-animation-controls {
+    flex-wrap: wrap;
+  }
+  
+  .add-dragdrop-digit-bank {
+    padding: 10px;
+  }
+}
+
+/* ===== THEME OVERRIDES ===== */
+
+.long-addition-grid.white-theme .add-cell {
+  background-color: white;
+  color: #333;
+}
+
+.long-addition-grid.minimal-mode .add-cell {
+  background-color: transparent;
+  border: none;
+}
+
+.long-addition-grid.minimal-mode .add-line {
+  background-color: #333;
+}
+
+/* ===== GUIDED MODE DIGIT PANEL ===== */
+
+.add-guided-digit-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+.add-digit-button {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.add-digit-button:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+  background-color: #BBDEFB !important;
+}
+
+.add-digit-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+

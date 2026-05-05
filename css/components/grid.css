@@ -1,0 +1,235 @@
+/* ============================================================================
+ * GRID COMPONENT STYLES
+ * Interactive grid systems, mathematical layouts, and visual representations
+ * ============================================================================ */
+
+/* ========================================
+ * GRID CONTAINER
+ * Main grid layout and positioning
+ * ======================================== */
+
+.math-app-grid-container {
+    position: relative;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ========================================
+ * GRID CELLS
+ * Individual grid cell styling and behavior
+ * ======================================== */
+
+.math-app-grid-cell {
+    position: absolute;
+    box-sizing: border-box;
+    transition: var(--transition-normal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 0;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+    z-index: var(--z-base);
+}
+
+.math-app-grid-cell:hover {
+    background-color: var(--color-overlay-light);
+    transform: scale(1.02);
+    cursor: pointer;
+}
+
+/* ========================================
+ * GRID CELL HIGHLIGHTING
+ * Highlighted and interactive grid cells
+ * ======================================== */
+
+.math-app-grid-cell-highlighted {
+    background-color: rgba(255, 255, 0, 0.3);
+    border: 3px solid #FFD700;
+    cursor: pointer;
+    transition: var(--transition-normal);
+    z-index: var(--z-floating);
+    pointer-events: auto;
+    animation: pulsate var(--animation-highlight-duration) infinite;
+}
+
+.math-app-grid-cell-highlighted:hover {
+    background-color: rgba(255, 255, 0, 0.3);
+    transform: none;
+    cursor: pointer;
+}
+
+/* ========================================
+ * GRID SEPARATORS
+ * Grid separation lines and dividers
+ * ======================================== */
+
+.math-app-grid-separator {
+    position: absolute;
+    box-sizing: border-box;
+    padding: 7px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+}
+
+.math-app-grid-separator-line {
+    width: calc(100% - 10px);
+    height: 6px;
+    background: #FFFFFF;
+    border-radius: 2px;
+    margin: 0 auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    border: 2px solid #FFFFFF;
+    border-top: 4px solid #FFFFFF;
+    margin-top: 5px;
+}
+
+/* ========================================
+ * PARTITIONED RECTANGLE
+ * Complex grid layouts and partitioned elements
+ * ======================================== */
+
+.partitioned-rectangle-container {
+    position: absolute;
+    z-index: var(--z-content);
+    display: grid;
+    gap: 2px;
+    background-color: #ffffff;
+    border: 3px solid #ffffff;
+    border-radius: 8px;
+    padding: 4px;
+    box-sizing: border-box;
+}
+
+.partitioned-rectangle-cell {
+    background-color: #f0f0f0;
+    color: #333;
+    font-size: 14px;
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.partitioned-rectangle-cell:hover {
+    background-color: #e0e0e0;
+    transform: scale(1.02);
+}
+
+.partitioned-rectangle-cell.clicked {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* ========================================
+ * TABLE ELEMENT
+ * Table-based grid layouts
+ * ======================================== */
+
+.table-element-container {
+    position: absolute;
+    z-index: var(--z-content);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.table-element[data-grid-position] {
+    position: absolute !important;
+    z-index: var(--z-content);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ========================================
+ * GRID POSITIONING SYSTEM
+ * Grid-based positioning utilities
+ * ======================================== */
+
+.main-container .header-container[data-grid-position],
+.main-container .character-container[data-grid-position],
+.main-container .dialog-container[data-grid-position] {
+    position: absolute;
+    z-index: var(--z-content);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.main-container .container1[data-grid-position],
+.main-container .container2[data-grid-position] {
+    position: absolute;
+    z-index: var(--z-content);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+[data-grid-position]:not([data-grid-position="quizPanel"]) {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+[data-grid-position="next-button"],
+[data-grid-position="previous-button"],
+[data-grid-position="question-dropdown"] {
+    pointer-events: auto;
+}
+
+/* ========================================
+ * GRID STATES
+ * Different states for grid elements
+ * ======================================== */
+
+.grid-cell.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.grid-cell.selected {
+    background-color: var(--color-button-next);
+    color: white;
+    border: 2px solid var(--color-white);
+}
+
+.grid-cell.correct {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.grid-cell.incorrect {
+    background-color: #f44336;
+    color: white;
+}
+
+/* ========================================
+ * GRID ANIMATIONS
+ * Grid-specific animations and effects
+ * ======================================== */
+
+.grid-cell.pulsate {
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+.grid-cell.glow {
+    animation: glow 2s ease-in-out infinite alternate;
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* ========================================
+ * GRID RESPONSIVE DESIGN
+ * Responsive adjustments for grid layouts
+ * ======================================== */
+
+/* Media queries removed - using coordinate and gc system for responsiveness */

@@ -1,0 +1,550 @@
+/* ============================================================================
+ * ANIMATION LIBRARY
+ * Keyframes, animation classes, and transition utilities
+ * ============================================================================ */
+
+/* ========================================
+ * TABLE CELL BLINK ANIMATIONS
+ * Blinking effects for table cells
+ * ======================================== */
+
+/**
+ * Table Cell Background Blink Animation
+ * Usage: Add 'table-cell-blink-bg' class to table cell
+ * Purpose: Makes cell background blink to draw attention
+ * Duration: 1 second, infinite loop
+ */
+@keyframes tableCellBlinkBg {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.table-cell-blink-bg {
+    animation: tableCellBlinkBg 1s infinite;
+}
+
+/**
+ * Table Cell Border Blink Animation
+ * Usage: Add 'table-cell-blink-border' class to table cell
+ * Purpose: Makes cell border blink to draw attention
+ * Duration: 1 second, infinite loop
+ */
+@keyframes tableCellBlinkBorder {
+    0%, 100% {
+        border-color: currentColor;
+        box-shadow: 0 0 0 0 currentColor;
+    }
+    50% {
+        border-color: #ff6b6b;
+        box-shadow: 0 0 8px 2px rgba(255, 107, 107, 0.6);
+    }
+}
+
+.table-cell-blink-border {
+    animation: tableCellBlinkBorder 1s infinite;
+}
+
+/**
+ * Table Cell Wiggle Animation (for incorrect mode)
+ * Usage: Applied automatically when cell mode is 'incorrect'
+ * Purpose: Makes cell wiggle to indicate incorrect answer
+ * Duration: 1 second, single iteration
+ */
+@keyframes tableCellWiggle {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+    }
+}
+
+.table-cell-wiggle {
+    animation: tableCellWiggle 1s ease-in-out;
+}
+
+/**
+ * Table Cell Focus Blink Animation (for focus mode)
+ * Usage: Applied automatically when cell mode is 'focus'
+ * Purpose: Makes cell background blink to draw attention
+ * Duration: 1 second, infinite loop
+ */
+@keyframes tableCellFocusBlink {
+    0%, 100% {
+        background-color: #FFEB3B; /* yellow */
+    }
+    50% {
+        background-color: #FFF59D; /* lighter yellow */
+    }
+}
+
+.table-cell-focus-blink {
+    animation: tableCellFocusBlink 1s infinite;
+}
+
+/* ========================================
+ * HOTSPOT ANIMATIONS
+ * Pulse effects for clickable hotspots
+ * ======================================== */
+
+/**
+ * Hotspot Pulse Animation
+ * Usage: Applied automatically when animated prop is true
+ * Purpose: Draws attention to clickable hotspot areas
+ * Duration: 2 seconds, infinite loop
+ */
+@keyframes hotspotPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 153, 0, 0.7);
+        opacity: 1;
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 153, 0, 0);
+        opacity: 0.9;
+    }
+}
+
+.hotspot-pulse {
+    animation: hotspotPulse 2s ease-in-out infinite;
+}
+
+.hotspot-component {
+    will-change: transform, opacity, box-shadow;
+    transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* ========================================
+ * BUTTON ANIMATIONS
+ * Pulse effects for user attention and feedback
+ * ======================================== */
+
+/**
+ * Next Button Pulse Animation
+ * Usage: Add 'math-app-pulse-animation' class to next button
+ * Purpose: Draws attention to primary action button
+ * Duration: 2 seconds, infinite loop
+ */
+@keyframes nextButtonPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 153, 0, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(255, 153, 0, 0.3);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 153, 0, 0);
+    }
+}
+
+.math-app-pulse-animation {
+    animation: nextButtonPulse var(--animation-pulse-duration) infinite;
+}
+
+/**
+ * Start Button Pulse Animation
+ * Usage: Add 'start-button-pulse' class to start button
+ * Purpose: Draws attention to the start button with orange glow
+ * Duration: 2 seconds, infinite loop
+ */
+@keyframes startButtonPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 8px rgba(255, 149, 0, 0.3), 0 0 0 0 rgba(255, 149, 0, 0.7);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 6px 12px rgba(255, 149, 0, 0.4), 0 0 0 15px rgba(255, 149, 0, 0.3);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 4px 8px rgba(255, 149, 0, 0.3), 0 0 0 0 rgba(255, 149, 0, 0);
+    }
+}
+
+.start-button-pulse {
+    animation: startButtonPulse var(--animation-pulse-duration) infinite;
+}
+
+/* ========================================
+ * HIGHLIGHT ANIMATIONS
+ * Visual emphasis for interactive elements
+ * ======================================== */
+
+/**
+ * Pulsate Animation
+ * Usage: Applied automatically to '.math-app-grid-cell-highlighted'
+ * Purpose: Highlights interactive grid cells with breathing effect
+ * Duration: 1.5 seconds, infinite loop
+ * Colors: Green glow effect
+ */
+@keyframes pulsate {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: var(--shadow-glow) #00ff00;
+    }
+    50% { 
+        transform: scale(1.1);
+        opacity: 0.8;
+        box-shadow: var(--shadow-glow) #00ff00, 0 0 50px #00ff00;
+    }
+}
+
+.math-app-grid-cell-highlighted {
+    animation: pulsate var(--animation-highlight-duration) infinite;
+}
+
+.math-app-grid-cell-highlighted:hover {
+    background-color: rgba(255, 255, 0, 0.3);
+    transform: none;
+    cursor: pointer;
+}
+
+/* ========================================
+ * PAGE TRANSITION ANIMATIONS
+ * Smooth transitions between content states
+ * ======================================== */
+
+/**
+ * Fade In Animation
+ * Usage: Add 'fadeIn' class to elements
+ * Purpose: Smooth element appearance
+ * Duration: 0.5 seconds
+ */
+@keyframes fadeIn {
+    from { 
+        opacity: 0; 
+    }
+    to { 
+        opacity: 1; 
+    }
+}
+
+.fadeIn {
+    animation: fadeIn 0.5s var(--transition-normal);
+}
+
+/* ========================================
+ * REACT 18 ANIMATIONS
+ * Animations used in math-applet.js
+ * ======================================== */
+
+/**
+ * Glow Animation
+ * Usage: Applied via CSS-in-JS in React components
+ * Purpose: Creates a glowing effect for elements
+ */
+@keyframes glow {
+    from { box-shadow: 0 0 5px currentColor; }
+    to { box-shadow: 0 0 20px currentColor, 0 0 30px currentColor; }
+}
+
+/**
+ * Pulsate Animation (React version)
+ * Usage: Applied via CSS-in-JS in React components
+ * Purpose: Creates a pulsating scale effect
+ */
+@keyframes pulsate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/**
+ * Pulsate Glow Animation
+ * Usage: Applied via CSS-in-JS in React components
+ * Purpose: Combines pulsating and glowing effects
+ */
+@keyframes pulsateGlow {
+    0% { transform: scale(1); box-shadow: 0 0 5px currentColor; }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px currentColor, 0 0 30px currentColor; }
+    100% { transform: scale(1); box-shadow: 0 0 5px currentColor; }
+}
+
+/**
+ * Spin Animation
+ * Usage: Applied via CSS-in-JS in React components
+ * Purpose: Creates a spinning effect
+ */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ========================================
+ * ANIMATION UTILITY CLASSES
+ * Quick animation helpers
+ * ======================================== */
+
+.math-app-pulse-animation {
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+.feedback-text-component {
+    transition: all 0.3s ease;
+}
+
+.progress-dot {
+    transition: all 0.3s ease;
+}
+
+.progress-dot:hover {
+    transform: scale(1.1);
+}
+
+.progress-dot:focus {
+    outline: 2px solid #1976d2;
+    outline-offset: 2px;
+}
+
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* ========================================
+ * TRANSITION UTILITIES
+ * Smooth transitions for interactive elements
+ * ======================================== */
+
+.smooth-transition {
+    transition: all var(--transition-normal);
+}
+
+.hover-scale {
+    transition: transform var(--transition-fast);
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+/* ========================================
+ * ANIMATION PERFORMANCE OPTIMIZATIONS
+ * Hardware acceleration and performance hints
+ * ======================================== */
+
+.math-app-pulse-animation,
+.start-button-pulse,
+.math-app-grid-cell-highlighted,
+.fadeIn {
+    will-change: transform, opacity, box-shadow;
+    transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* ========================================
+ * IMAGE STACK ANIMATIONS
+ * Blink and glow effects for layered images
+ * ======================================== */
+
+/**
+ * Image Stack Blink Animation
+ * Usage: Applied automatically when layer blink prop is true
+ * Purpose: Makes image layer blink by animating opacity
+ * Duration: Controlled by --blink-duration CSS variable (default: 1s)
+ */
+@keyframes imageStackBlink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.image-stack-blink {
+    animation: imageStackBlink var(--blink-duration, 1s) infinite;
+}
+
+/**
+ * Line Blink Animation
+ * Usage: Applied to line components to make them blink
+ * Purpose: Makes line border blink to draw attention
+ * Duration: 1 second, infinite loop
+ */
+@keyframes blink-line {
+    0%, 100% {
+        opacity: 1;
+        border-color: #ffffff;
+    }
+    50% {
+        opacity: 0.3;
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+}
+
+/**
+ * Image Stack Glow Animation
+ * Usage: Applied automatically when layer glow prop is true
+ * Purpose: Makes image layer glow by animating opacity (alpha only)
+ * Duration: Controlled by --glow-duration CSS variable (default: 2s)
+ */
+@keyframes imageStackGlow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.image-stack-glow {
+    animation: imageStackGlow var(--glow-duration, 2s) infinite;
+}
+
+/**
+ * Image Stack Layer Styles
+ * Purpose: Base styles for image stack layers
+ */
+.image-stack-layer {
+    display: block;
+    object-fit: contain;
+    will-change: transform, opacity;
+    transform: translateZ(0); /* Force hardware acceleration */
+}
+
+.image-stack-container {
+    will-change: transform;
+    transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* ========================================
+ * RESPONSIVE ANIMATION SCALING
+ * Adjust animation intensity based on screen size
+ * ======================================== */
+
+/* Media queries removed - using coordinate and gc system for responsiveness */
+/* Note: Accessibility media query for reduced motion was also removed */
+
+/* ========================================
+ * MULTIPLICATION GRID ANIMATIONS
+ * Animations for practice, guided, and animation modes
+ * ======================================== */
+
+/**
+ * Guided Mode Pulse Animation
+ * Usage: Applied to active guided step cell
+ * Purpose: Draws attention to the current step
+ * Duration: 1.5 seconds, infinite loop
+ */
+@keyframes multiplicationGuidedPulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
+        transform: scale(1.02);
+    }
+}
+
+/**
+ * Digit Appear Animation
+ * Usage: Applied when a digit is revealed in animation mode
+ * Purpose: Creates a pop-in effect for new digits
+ * Duration: 0.3 seconds
+ */
+@keyframes multiplicationDigitAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/**
+ * Carry Fly Animation
+ * Usage: Applied when a carry digit moves to the next column
+ * Purpose: Visualizes the carry operation
+ * Duration: 0.5 seconds
+ */
+@keyframes multiplicationCarryFly {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translate(-20px, -30px) scale(1.3);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-40px, -60px) scale(1);
+    }
+}
+
+/**
+ * Step Highlight Animation
+ * Usage: Applied to highlight current step in animation
+ * Purpose: Draws attention to the active calculation
+ * Duration: 1 second, infinite loop
+ */
+@keyframes multiplicationStepHighlight {
+    0%, 100% {
+        background-color: #FFEB3B;
+        box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+    }
+    50% {
+        background-color: #FFF176;
+        box-shadow: 0 0 20px rgba(255, 235, 59, 0.8);
+    }
+}
+
+/**
+ * Practice Cell Focus Animation
+ * Usage: Applied when practice mode cell is focused
+ * Purpose: Indicates active input field
+ * Duration: 0.3 seconds
+ */
+@keyframes multiplicationPracticeFocus {
+    0% {
+        box-shadow: 0 0 0 rgba(33, 150, 243, 0);
+    }
+    100% {
+        box-shadow: 0 0 12px rgba(33, 150, 243, 0.5);
+    }
+}
+
+/* Animation utility classes for multiplication grid */
+.mult-guided-pulse {
+    animation: multiplicationGuidedPulse 1.5s ease-in-out infinite;
+}
+
+.mult-digit-appear {
+    animation: multiplicationDigitAppear 0.3s ease-out;
+}
+
+.mult-carry-fly {
+    animation: multiplicationCarryFly 0.5s ease-out;
+}
+
+.mult-step-highlight {
+    animation: multiplicationStepHighlight 1s ease-in-out infinite;
+}
+
+.mult-practice-focus {
+    animation: multiplicationPracticeFocus 0.3s ease-out forwards;
+}

@@ -1,0 +1,188 @@
+/* ============================================================================
+ * NUMBER PAD COMPONENT STYLES
+ * Number input, calculator interface, and interactive number selection
+ * ============================================================================ */
+
+/* ========================================
+ * NUMBER PAD CONTAINER
+ * Main number pad layout and positioning
+ * ======================================== */
+
+.number-pad-panel-container {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    background-color: #8B4513;
+    border-radius: 15px;
+    border: 4px solid #D2691E;
+    padding: 15px;
+    box-sizing: border-box;
+    z-index: var(--z-elevated);
+}
+
+/* ========================================
+ * NUMBER PAD TEXT AREA
+ * Feedback and instruction display area
+ * ======================================== */
+
+.number-pad-text-area {
+    width: 100%;
+    height: 35%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 3%;
+    padding: 15px;
+    border-radius: var(--border-radius-md);
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    transition: all var(--transition-normal);
+    border: 2px solid;
+    box-sizing: border-box;
+    line-height: 1.4;
+    min-height: 60px;
+}
+
+.number-pad-text-area[data-type="incorrect"] {
+    color: var(--textarea-incorrect-color);
+    background-color: var(--textarea-incorrect-bg);
+    border-color: var(--textarea-incorrect-border);
+    border-style: dashed;
+}
+
+.number-pad-text-area[data-type="correct"] {
+    color: var(--textarea-correct-color);
+    background-color: var(--textarea-correct-bg);
+    border-color: var(--textarea-correct-border);
+    border-style: dashed;
+}
+
+.number-pad-text-area[data-type="hint"] {
+    color: var(--textarea-hint-color);
+    background-color: var(--textarea-hint-bg);
+    border-color: var(--textarea-hint-border);
+}
+
+/* ========================================
+ * NUMBER PAD GRID
+ * Grid layout for number buttons
+ * ======================================== */
+
+.number-pad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 3px;
+    column-gap: 3px;
+    width: 100%;
+    height: 51%;
+    align-items: center;
+    justify-items: center;
+    margin-bottom: 3%;
+}
+
+/* ========================================
+ * NUMBER PAD BUTTONS
+ * Individual number input buttons
+ * ======================================== */
+
+.number-pad-button {
+    background-color: #FFAB40;
+    color: #000000;
+    font-size: 30px;
+    font-weight: bold;
+    border-radius: 6px;
+    border: 2px solid #FF9900;
+    margin: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    box-sizing: border-box;
+}
+
+.number-pad-button:hover,
+.number-pad-button.hovered {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.number-pad-button:active {
+    transform: scale(0.95);
+}
+
+/* ========================================
+ * CHECK BUTTON
+ * Submit/check answer button
+ * ======================================== */
+
+.number-pad-check-button {
+    background-color: #FF8C00;
+    color: #000000;
+    font-size: 25px;
+    font-weight: bold;
+    border-radius: 8px;
+    border: 3px solid #FF6347;
+    height: 60px;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    height: 10%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.number-pad-check-button:hover,
+.number-pad-check-button.hovered {
+    transform: scale(1.02);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.number-pad-check-button:active {
+    transform: scale(0.98);
+}
+
+/* ========================================
+ * NUMBER PAD STATES
+ * Different states for number pad elements
+ * ======================================== */
+
+.number-pad-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.number-pad-check-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* ========================================
+ * NUMBER PAD ANIMATIONS
+ * Number pad specific animations and effects
+ * ======================================== */
+
+.number-pad-button.pulsate {
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+.number-pad-check-button.pulsate {
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+/* ========================================
+ * NUMBER PAD RESPONSIVE DESIGN
+ * Responsive adjustments for different screen sizes
+ * ======================================== */
+
+/* Media queries removed - using coordinate and gc system for responsiveness */

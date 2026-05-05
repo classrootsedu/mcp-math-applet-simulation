@@ -1,0 +1,226 @@
+/* ============================================================================
+ * QUIZ PANEL COMPONENT STYLES
+ * Interactive quiz interfaces, question panels, and assessment components
+ * ============================================================================ */
+
+/* ========================================
+ * QUIZ PANEL CONTAINER
+ * Main quiz panel layout and positioning
+ * ======================================== */
+
+.math-app-quiz-panel {
+    z-index: var(--z-modal);
+    position: absolute;
+    display: flex;
+    box-sizing: border-box;
+}
+
+/* ========================================
+ * QUIZ PANEL LAYOUT
+ * Two-column and single-column layouts
+ * ======================================== */
+
+.math-app-quiz-panel-two-column {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    gap: 0px;
+}
+
+.math-app-quiz-panel-left-column {
+    flex: 0 0 40%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.math-app-quiz-panel-right-column {
+    flex: 0 0 60%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: rgba(50, 50, 50, 0.95);
+    border-radius: 15px;
+}
+
+.math-app-quiz-panel-single-column {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+}
+
+/* ========================================
+ * QUIZ PANEL HEADER
+ * Header section styling
+ * ======================================== */
+
+.math-app-quiz-panel-header-section {
+    flex: 0 0 20%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.math-app-quiz-panel-header {
+    margin: 0;
+    text-align: center;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: bold;
+    width: 80%;
+    max-width: 100%;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ========================================
+ * QUIZ PANEL DESCRIPTION
+ * Description text styling
+ * ======================================== */
+
+.math-app-quiz-panel-description {
+    font-size: 28px;
+    line-height: 1.3;
+    text-align: center;
+    color: #ffffff;
+    font-weight: bold;
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ========================================
+ * QUIZ PANEL BUTTONS
+ * Button section and individual buttons
+ * ======================================== */
+
+.math-app-quiz-panel-buttons-section {
+    flex: 0 0 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+.math-app-quiz-panel-button {
+    width: 70%;
+    min-height: 55px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 3px solid #333;
+    color: #333;
+    box-sizing: border-box;
+}
+
+.math-app-quiz-panel-button:hover {
+    background-color: rgba(255, 255, 255, 1);
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.math-app-quiz-panel-button-correct {
+    background-color: rgba(102, 204, 102, 0.9);
+    border-color: #66cc66;
+    border: 3px solid #66cc66;
+}
+
+.math-app-quiz-panel-button-incorrect {
+    background-color: rgba(255, 102, 102, 0.9);
+    border-color: #ff6666;
+    border: 3px solid #ff6666;
+}
+
+/* ========================================
+ * QUIZ PANEL FEEDBACK
+ * Feedback section and styling
+ * ======================================== */
+
+.math-app-quiz-panel-feedback-section {
+    flex: 0 0 30%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.math-app-quiz-panel-feedback {
+    text-align: center;
+    width: 100%;
+    max-width: 100%;
+    font-size: 19px;
+    font-weight: bold;
+    line-height: 1.3;
+    padding: 20px;
+    border: 2px solid;
+    border-radius: 10px;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.math-app-quiz-panel-feedback-correct {
+    color: var(--textarea-correct-color);
+    border-color: var(--textarea-correct-border);
+    background-color: var(--textarea-correct-bg);
+    border-style: dashed;
+}
+
+.math-app-quiz-panel-feedback-incorrect {
+    color: var(--textarea-incorrect-color);
+    border-color: var(--textarea-incorrect-border);
+    background-color: var(--textarea-incorrect-bg);
+    border-style: dashed;
+}
+
+.math-app-quiz-panel-single-feedback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100px;
+}
+
+/* ========================================
+ * QUIZ PANEL STATES
+ * Different states for quiz panel elements
+ * ======================================== */
+
+.quiz-panel.hidden {
+    display: none !important;
+}
+
+.quiz-panel.visible {
+    display: flex !important;
+    visibility: visible !important;
+}
+
+.quiz-panel.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ========================================
+ * QUIZ PANEL ANIMATIONS
+ * Quiz panel specific animations and effects
+ * ======================================== */
+
+.math-app-quiz-panel-button.pulsate {
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+.math-app-quiz-panel-button.glow {
+    animation: glow 2s ease-in-out infinite alternate;
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* ========================================
+ * QUIZ PANEL RESPONSIVE DESIGN
+ * Responsive adjustments for quiz panels
+ * ======================================== */
+
+/* Media queries removed - using coordinate and gc system for responsiveness */

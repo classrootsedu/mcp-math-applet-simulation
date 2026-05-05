@@ -1,0 +1,299 @@
+/* ============================================================================
+ * UTILITY COMPONENT STYLES
+ * Common utilities, error boundaries, loading states, and helper components
+ * ============================================================================ */
+
+/* ========================================
+ * ERROR BOUNDARY STYLES
+ * Error handling and fallback components
+ * ======================================== */
+
+.error-boundary {
+    width: 100vw;
+    height: 100vh;
+    background: #ffebee;
+    color: #c62828;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-family: Arial, sans-serif;
+}
+
+.error-boundary details {
+    margin-top: 20px;
+    max-width: 80%;
+}
+
+.error-boundary pre {
+    font-size: 12px;
+    margin-top: 10px;
+    overflow: auto;
+    background-color: #f5f5f5;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.dependency-error {
+    width: 100vw;
+    height: 100vh;
+    background: #fff3e0;
+    color: #e65100;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.element-error {
+    color: red;
+    padding: 10px;
+    border: 1px solid red;
+}
+
+.element-render-error {
+    color: red;
+    font-size: 12px;
+    padding: 5px;
+}
+
+.element-error-boundary {
+    padding: 10px;
+    border: 2px solid #ff6b6b;
+    border-radius: 8px;
+    background-color: rgba(255, 107, 107, 0.1);
+    color: #d63031;
+    font-size: 14px;
+    text-align: center;
+}
+
+.element-error-boundary button {
+    margin-top: 8px;
+    padding: 4px 8px;
+    background-color: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* ========================================
+ * LOADING AND SUSPENSE STYLES
+ * Loading states and fallback components
+ * ======================================== */
+
+.element-loading-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    font-size: 14px;
+    color: #666;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 1px dashed #ccc;
+}
+
+.element-loading-fallback .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #1976d2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+.element-suspense-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    font-size: 14px;
+    color: #666;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+}
+
+.element-suspense-fallback .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid #1976d2;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 8px;
+}
+
+.table-loading-fallback {
+    padding: 20px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================
+ * FEEDBACK AND TEXT COMPONENTS
+ * User feedback and text display components
+ * ======================================== */
+
+.feedback-text-component {
+    position: absolute;
+    left: 37.5%;
+    top: 34.38%;
+    width: 31.25%;
+    height: 31.25%;
+    padding: 12px;
+    box-sizing: border-box;
+    background-color: transparent;
+    color: black;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    z-index: var(--z-content, 1000);
+    transition: all 0.3s ease;
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* ========================================
+ * TILE AND ANIMATION COMPONENTS
+ * Interactive tiles and animation effects
+ * ======================================== */
+
+.tile-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+.tile-content.glow {
+    animation: glow 2s ease-in-out infinite alternate;
+    box-shadow: 0 0 10px currentColor;
+}
+
+.tile-content.pulsate {
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+.tile-content.pulsate-glow {
+    animation: pulsateGlow 2s ease-in-out infinite;
+}
+
+/* ========================================
+ * UTILITY CLASSES
+ * Common utility classes for JavaScript interactions
+ * ======================================== */
+
+.hidden {
+    display: none !important;
+}
+
+.visible {
+    display: flex !important;
+    visibility: visible !important;
+}
+
+.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pulsate {
+    animation: pulsate 1.5s ease-in-out infinite;
+}
+
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+/* ========================================
+ * TEXT AREA STYLING CLASSES
+ * Universal text area styles for all pages
+ * ======================================== */
+
+.text-area,
+.feedback-text-area,
+textarea.feedback,
+.hint-text,
+.instruction-text {
+    padding: 15px;
+    border-radius: var(--border-radius-md);
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    transition: all var(--transition-normal);
+    border: 2px solid;
+    box-sizing: border-box;
+    line-height: 1.4;
+}
+
+.text-area-incorrect,
+.feedback-text-area.incorrect,
+textarea.feedback.incorrect,
+.feedback-incorrect {
+    color: var(--textarea-incorrect-color);
+    background-color: var(--textarea-incorrect-bg);
+    border-color: var(--textarea-incorrect-border);
+    border-style: dashed;
+}
+
+.text-area-correct,
+.feedback-text-area.correct,
+textarea.feedback.correct,
+.feedback-correct {
+    color: var(--textarea-correct-color);
+    background-color: var(--textarea-correct-bg);
+    border-color: var(--textarea-correct-border);
+    border-style: dashed;
+}
+
+.text-area-hint,
+.feedback-text-area.hint,
+textarea.feedback.hint,
+.feedback-hint,
+.hint-text {
+    color: var(--textarea-hint-color);
+    background-color: var(--textarea-hint-bg);
+    border-color: var(--textarea-hint-border);
+}
+
+.feedback-container {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.feedback-container .text-area {
+    width: 100%;
+    margin: 0;
+}
+
+/* ========================================
+ * RESPONSIVE UTILITIES
+ * Responsive utility classes
+ * ======================================== */
+
+/* Media queries removed - using coordinate and gc system for responsiveness */

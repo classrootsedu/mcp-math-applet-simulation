@@ -1,0 +1,237 @@
+/* ============================================================================
+ * MATH LEARNING APP STYLES
+ * Component-specific styles and animations
+ * ============================================================================ */
+
+/* Import core design system */
+@import url('./core.css');
+
+/* Import animations */
+@import url('./animations.css');
+
+/* Import component-specific styles */
+@import url('./components/quadrilateral.css');
+@import url('./components/long-division-grid.css');
+@import url('./components/long-addition-grid.css');
+
+
+/* ============================================================================
+ * GRID POSITIONING SYSTEM
+ * ============================================================================ */
+
+/* Grid-positioned elements base styles */
+.main-container .header-container[data-grid-position],
+.main-container .character-container[data-grid-position],
+.main-container .dialog-container[data-grid-position] {
+    position: absolute;
+    z-index: var(--z-content);
+    margin: 0;
+    /* padding: 0; - Remove this to allow coordinate-based padding */
+    box-sizing: border-box;
+}
+
+/* Container positioning */
+.main-container .container1[data-grid-position],
+.main-container .container2[data-grid-position] {
+    position: absolute;
+    z-index: var(--z-content);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Table element positioning */
+.main-container .table-element[data-grid-position],
+.main-container [data-grid-position="visual-rep-table"] {
+    position: absolute !important;
+    z-index: var(--z-content);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* All grid-positioned elements reset */
+[data-grid-position]:not([data-grid-position="quizPanel"]) {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Override pointer-events for interactive elements */
+[data-grid-position="next-button"],
+[data-grid-position="previous-button"],
+[data-grid-position="question-dropdown"] {
+    pointer-events: auto;
+}
+
+/* Dialog container styling */
+.dialog-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    z-index: var(--z-content);
+}
+
+/* ========================================
+ * CHARACTER & CONTENT COMPONENTS
+ * Visual elements and content display
+ * ======================================== */
+
+/* Character Container */
+.character-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-content);
+}
+
+.character-container .character-image {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: contain;
+    filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+    border: 3px solid transparent;
+    border-radius: var(--border-radius-md);
+    margin: 0;
+    padding: 0;
+}
+
+/* Dialog Content Styling */
+.dialog-container .dialog-content,
+.dialog-container .dialogue-content {
+    font-size: clamp(1rem, 2.5vw, 1.8rem);
+    color: var(--color-dialog-text);
+    text-align: center;
+    font-weight: 500;
+    line-height: 1.4;
+    text-shadow: var(--shadow-sm);
+    margin: 0;
+    padding: 0;
+}
+
+/* Instruction Header */
+.instruction-header[data-grid-position] {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    pointer-events: auto;
+    user-select: text;
+    -webkit-user-select: text;
+    white-space: normal;
+    overflow: visible;
+    word-wrap: break-word;
+    position: absolute;
+    z-index: var(--z-notification);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+/* Question dropdown styling - consolidated in Dropdown Components section above */
+
+/* ============================================================================
+ * CRITICAL OVERRIDES
+ * High-specificity rules to ensure component functionality
+ * ============================================================================ */
+
+/* ========================================
+ * BUTTON CLICKABILITY OVERRIDES
+ * Ensures buttons remain functional despite layout changes
+ * ======================================== */
+
+/* CRITICAL: Next Button Clickability Override */
+[data-grid-position="next-button"],
+.main-container [data-grid-position="next-button"],
+*[data-grid-position="next-button"],
+div[data-grid-position="next-button"],
+button[data-grid-position="next-button"] {
+    position: absolute;
+    display: block;
+    visibility: visible;
+    z-index: var(--z-button);
+    pointer-events: auto;
+    cursor: pointer;
+    isolation: isolate;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    transform: none;
+    contain: none;
+}
+
+/* CRITICAL: Previous Button Clickability Override */
+[data-grid-position="previous-button"],
+.main-container [data-grid-position="previous-button"],
+*[data-grid-position="previous-button"],
+div[data-grid-position="previous-button"],
+button[data-grid-position="previous-button"] {
+    /* position: absolute; - REMOVED: Let grid positioning handle this */
+    display: block;
+    visibility: visible;
+    z-index: var(--z-button);
+    pointer-events: auto;
+    cursor: pointer;
+    isolation: isolate;
+    clip: auto;
+    clip-path: none;
+    overflow: visible;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    transform: none;
+    contain: none;
+}
+
+
+/* ============================================================================
+ * GLOBAL STYLES AND OVERRIDES
+ * Global styles that don't belong to specific components
+ * ============================================================================ */
+
+/* ============================================================================
+ * GRID OVERLAY SYSTEM
+ * Development and debugging tools
+ * ============================================================================ */
+
+/* ========================================
+ * Grid Overlay Container
+ * Development tool for visual grid positioning
+ * ======================================== */
+
+/* Grid overlay container - Development tool for positioning */
+#grid-overlay {
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    z-index: var(--z-overlay);
+}
+
+/* Grid overlay control panel */
+#grid-overlay .grid-control-panel {
+    pointer-events: auto;
+    user-select: auto;
+    -webkit-user-select: auto;
+}
+
+/* Grid overlay highlights */
+.grid-highlight {
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+/* Ensure main container is visible for grid overlay calculations */
+.main-container {
+    border: 1px solid var(--color-overlay-light);
+}
+
+/* Page 7 Fill Blanks - Manual layout mode uses coordinates, so no CSS overrides needed */
+
+
+

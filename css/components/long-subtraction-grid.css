@@ -1,0 +1,970 @@
+/**
+ * Long Subtraction Grid Component Styles
+ * 
+ * Styles for the long subtraction visualization component
+ * with support for borrowing animations and multiple interactive modes.
+ */
+
+/* ===== BASE CONTAINER ===== */
+
+.long-subtraction-grid {
+  position: relative;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* ===== ROW STYLES ===== */
+
+.sub-row {
+  display: flex;
+  align-items: center;
+}
+
+.sub-borrow-row {
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.sub-minuend-row {
+  margin-bottom: 2px;
+}
+
+.sub-subtrahend-row {
+  margin-bottom: 2px;
+}
+
+.sub-difference-row {
+  margin-top: 2px;
+}
+
+.sub-place-value-row {
+  margin-bottom: 6px;
+}
+
+.sub-place-value-label {
+  font-weight: bold;
+  color: #666;
+  text-align: center;
+  user-select: none;
+  opacity: 0.8;
+}
+
+/* ===== CELL STYLES ===== */
+
+.sub-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border-radius: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+
+.sub-cell-borrow {
+  color: #FF5722;
+  background-color: rgba(255, 87, 34, 0.15);
+  border: 1px dashed rgba(255, 87, 34, 0.4);
+  font-size: 0.7em;
+  min-height: auto;
+  padding: 2px 0;
+  opacity: 0.9;
+}
+
+.sub-cell-minuend {
+  color: #4ECDC4;
+  background-color: rgba(78, 205, 196, 0.1);
+}
+
+.sub-cell-subtrahend {
+  color: #2196F3;
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.sub-cell-difference {
+  color: #E91E63;
+  background-color: rgba(233, 30, 99, 0.1);
+}
+
+/* ===== BORROWING STYLES ===== */
+
+.sub-cell-strikethrough {
+  position: relative;
+  color: #999 !important;
+}
+
+.sub-cell-strikethrough::after {
+  content: '';
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  top: 50%;
+  height: 2px;
+  background-color: #F44336;
+  transform: rotate(-15deg);
+  animation: strikethroughDraw 0.5s ease-out forwards;
+}
+
+@keyframes strikethroughDraw {
+  0% {
+    width: 0;
+    left: 50%;
+  }
+  100% {
+    width: 70%;
+    left: 15%;
+  }
+}
+
+.sub-cell-regrouped {
+  color: #FF5722 !important;
+  font-weight: bold;
+  animation: regroupAppear 0.5s ease-out;
+}
+
+/* Regrouped row - values shown above the minuend */
+.sub-regrouped-row {
+  position: relative;
+}
+
+.sub-regrouped-row .sub-cell-regrouped {
+  color: #FF5722;
+  font-weight: bold;
+  position: relative;
+}
+
+/* Animation for regrouped values appearing */
+@keyframes regroupAppear {
+  0% {
+    transform: scale(0.5) translateY(10px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.3) translateY(-2px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===== LINE STYLES ===== */
+
+.sub-line {
+  background-color: #333;
+}
+
+/* ===== INPUT STYLES ===== */
+
+.sub-cell-input,
+.sub-cell-practice,
+.sub-cell-guided-active {
+  outline: none;
+  text-align: center;
+  font-family: inherit;
+}
+
+.sub-cell-input:focus,
+.sub-cell-practice:focus,
+.sub-cell-guided-active:focus {
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+}
+
+/* ===== HIGHLIGHTED CELL ===== */
+
+.sub-cell-highlighted {
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.8) !important;
+  border: 3px solid #FFC107 !important;
+  animation: highlightPulse 1s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 1);
+  }
+}
+
+/* ===== SPOTINCORRECT MODE ===== */
+
+.long-subtraction-grid[data-mode="spotIncorrect"] .sub-cell {
+  cursor: pointer;
+}
+
+.long-subtraction-grid[data-mode="spotIncorrect"] .sub-cell:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ===== BUTTON THEME (for spotIncorrect mode) ===== */
+
+.sub-cell-button-theme {
+  background: linear-gradient(145deg, #FFD700, #E6C200);
+  border: 2px solid #B8860B;
+  border-radius: 8px;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.4),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+  transition: all 0.1s ease;
+  position: relative;
+  transform: translateY(0);
+}
+
+.sub-cell-button-theme:hover {
+  background: linear-gradient(145deg, #FFE55C, #FFD700);
+  box-shadow: 
+    6px 6px 12px rgba(0, 0, 0, 0.4),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.5),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.sub-cell-button-theme:active {
+  background: linear-gradient(145deg, #E6C200, #CCB000);
+  box-shadow: 
+    2px 2px 4px rgba(0, 0, 0, 0.3),
+    inset 2px 2px 4px rgba(0, 0, 0, 0.2),
+    inset -1px -1px 2px rgba(255, 255, 255, 0.1);
+  transform: translateY(1px);
+}
+
+.sub-cell-button-theme.selected {
+  background: linear-gradient(145deg, #2196F3, #1976D2);
+  color: black;
+  box-shadow: 
+    0 0 0 2px rgba(33, 150, 243, 0.8),
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.4),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.sub-cell-button-theme.correct {
+  background: linear-gradient(145deg, #4CAF50, #45A049);
+  border-color: #2E7D32;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.sub-cell-button-theme.incorrect {
+  background: linear-gradient(145deg, #FF6B6B, #E53E3E);
+  border-color: #D32F2F;
+  box-shadow: 
+    4px 4px 8px rgba(0, 0, 0, 0.3),
+    inset 1px 1px 2px rgba(255, 255, 255, 0.3),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.2);
+  animation: wiggle 0.5s ease-in-out;
+}
+
+.sub-cell-button-theme.disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Wiggle animation for incorrect drops */
+@keyframes wiggle {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  10% { transform: translateX(-8px) rotate(-3deg); }
+  20% { transform: translateX(8px) rotate(3deg); }
+  30% { transform: translateX(-8px) rotate(-3deg); }
+  40% { transform: translateX(8px) rotate(3deg); }
+  50% { transform: translateX(-8px) rotate(-3deg); }
+  60% { transform: translateX(8px) rotate(3deg); }
+  70% { transform: translateX(-8px) rotate(-3deg); }
+  80% { transform: translateX(8px) rotate(3deg); }
+  90% { transform: translateX(-8px) rotate(-3deg); }
+}
+
+.sub-cell-wiggling {
+  background-color: #FA8072 !important;
+  border: 3px solid #FF6B6B !important;
+  box-shadow: 0 0 10px rgba(250, 128, 114, 0.5);
+  animation: wiggle 500ms ease-in-out;
+}
+
+/* ===== PRACTICE MODE ===== */
+
+.long-subtraction-grid[data-mode="practice"] {
+  border: 2px solid #2196F3;
+}
+
+.sub-cell-practice {
+  background-color: #F5F5F5;
+  border: 2px dashed #9E9E9E;
+}
+
+.sub-cell-practice:focus {
+  border-color: #2196F3;
+  background-color: white;
+}
+
+/* ===== GUIDED MODE ===== */
+
+.long-subtraction-grid[data-mode="guided"] {
+  border: 2px solid #FFC107;
+}
+
+.sub-cell-guided-active {
+  background-color: #FFF9C4 !important;
+  border: 3px solid #FFC107 !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+  animation: guidedPulse 1.5s ease-in-out infinite;
+}
+
+.sub-cell-hidden {
+  background-color: transparent !important;
+  border: 2px dashed #E0E0E0 !important;
+  color: transparent !important;
+}
+
+.sub-guided-hint {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes guidedPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.8);
+  }
+}
+
+/* ===== ANIMATION MODE ===== */
+
+.long-subtraction-grid[data-mode="animation"] {
+  border: 2px solid #673AB7;
+}
+
+.sub-cell-animation-hidden {
+  background-color: transparent !important;
+  border: 2px dashed #E0E0E0 !important;
+  color: transparent !important;
+}
+
+.sub-animation-controls {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+}
+
+.sub-animation-controls button {
+  transition: all 0.2s ease;
+}
+
+.sub-animation-controls button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sub-animation-controls button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sub-animation-info {
+  animation: fadeIn 0.3s ease;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  line-height: 1.5;
+}
+
+/* Step description callout - more prominent messaging */
+.sub-step-callout {
+  position: relative;
+  padding: 12px 16px;
+  margin: 10px 0;
+  border-radius: 8px;
+  font-weight: 600;
+  animation: calloutAppear 0.4s ease-out;
+}
+
+.sub-step-callout.error {
+  background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+  border: 2px solid #F44336;
+  color: #C62828;
+  box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+}
+
+.sub-step-callout.warning {
+  background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+  border: 2px solid #FF9800;
+  color: #E65100;
+  box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+}
+
+.sub-step-callout.success {
+  background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+  border: 2px solid #4CAF50;
+  color: #2E7D32;
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.sub-step-callout.info {
+  background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  border: 2px solid #2196F3;
+  color: #1565C0;
+  box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+}
+
+.sub-step-callout.action {
+  background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%);
+  border: 2px solid #9C27B0;
+  color: #6A1B9A;
+  box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+}
+
+.sub-step-callout.complete {
+  background: linear-gradient(135deg, #E8F5E9 0%, #A5D6A7 100%);
+  border: 3px solid #4CAF50;
+  color: #1B5E20;
+  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  font-size: 1.1em;
+}
+
+@keyframes calloutAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes digitAppear {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes digitFade {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Flying borrow animation - shows "10" moving from source to target */
+.sub-flying-borrow {
+  position: fixed;
+  font-weight: bold;
+  color: white;
+  background: linear-gradient(145deg, #FF7043, #FF5722);
+  border: 3px solid #E64A19;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 
+    0 6px 25px rgba(255, 87, 34, 0.7),
+    0 0 40px rgba(255, 87, 34, 0.4);
+  font-size: 1.1em;
+  width: 48px;
+  height: 48px;
+  transition: none;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Smooth arc animation for borrow - moves right to left with a gentle curve */
+@keyframes flyBorrow {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  15% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.15),
+      -25px
+    ) scale(1.15);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.4),
+      -35px
+    ) scale(1.25);
+    opacity: 1;
+  }
+  55% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.6),
+      -30px
+    ) scale(1.2);
+    opacity: 1;
+  }
+  75% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.85),
+      -15px
+    ) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--end-x), var(--end-y)) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Indicator showing "-1" on the source digit */
+.sub-borrow-indicator-source {
+  position: fixed;
+  font-weight: bold;
+  color: #D32F2F;
+  background: linear-gradient(145deg, #FFEBEE, #FFCDD2);
+  border: 2px solid #EF5350;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 999;
+  box-shadow: 0 3px 12px rgba(244, 67, 54, 0.5);
+  font-size: 0.8em;
+  width: 32px;
+  height: 32px;
+  animation: indicatorPop 600ms ease-out forwards;
+}
+
+/* Indicator showing "+10" on the target digit */
+.sub-borrow-indicator-target {
+  position: fixed;
+  font-weight: bold;
+  color: #2E7D32;
+  background: linear-gradient(145deg, #E8F5E9, #C8E6C9);
+  border: 2px solid #66BB6A;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 999;
+  box-shadow: 0 3px 12px rgba(76, 175, 80, 0.5);
+  font-size: 0.75em;
+  padding: 4px 8px;
+  animation: indicatorSlideIn 500ms ease-out forwards;
+  animation-delay: 400ms;
+  opacity: 0;
+}
+
+@keyframes indicatorPop {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.3);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes indicatorSlideIn {
+  0% {
+    transform: translate(-50%, 0) scale(0.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Pulse effect on the source cell when borrowing */
+.sub-cell-borrow-source {
+  animation: borrowSourcePulse 800ms ease-in-out;
+}
+
+@keyframes borrowSourcePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(244, 67, 54, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+  }
+}
+
+/* Pulse effect on the target cell when receiving borrow */
+.sub-cell-borrow-target {
+  animation: borrowTargetPulse 800ms ease-in-out;
+  animation-delay: 600ms;
+}
+
+@keyframes borrowTargetPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+}
+
+/* Bouncing digit animation for subtraction result */
+.sub-bouncing-digit {
+  position: fixed;
+  font-weight: bold;
+  color: #673AB7;
+  background: linear-gradient(145deg, #EDE7F6, #D1C4E9);
+  border: 3px solid #673AB7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  box-shadow: 0 4px 20px rgba(103, 58, 183, 0.6);
+  font-size: 1.4em;
+  width: 50px;
+  height: 50px;
+  transition: none;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes bounceDown {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  20% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.2),
+      calc(var(--end-y) * 0.1)
+    ) scale(1.2) rotate(3deg);
+    opacity: 1;
+  }
+  40% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.5),
+      calc(var(--end-y) * 0.3)
+    ) scale(1.35) rotate(-4deg);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.75),
+      calc(var(--end-y) * 0.6)
+    ) scale(1.25) rotate(2deg);
+    opacity: 1;
+  }
+  80% {
+    transform: translate(-50%, -50%) translate(
+      calc(var(--end-x) * 0.9),
+      calc(var(--end-y) * 0.85)
+    ) scale(1.1) rotate(-1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--end-x), var(--end-y)) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes impactPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(103, 58, 183, 0.5);
+  }
+  30% {
+    transform: scale(1.25);
+    box-shadow: 0 0 30px rgba(103, 58, 183, 1);
+  }
+  60% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(103, 58, 183, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(103, 58, 183, 0.5);
+  }
+}
+
+.sub-cell-impact {
+  animation: impactPulse 400ms ease-in-out;
+}
+
+/* ===== CAN'T SUBTRACT ANIMATION ===== */
+/* Shows when top digit is smaller than bottom - wiggles in red */
+
+.sub-cell-cant-subtract {
+  animation: cantSubtractWiggle 1.2s ease-in-out;
+  color: #F44336 !important;
+  border: 3px solid #F44336 !important;
+  background-color: rgba(244, 67, 54, 0.15) !important;
+}
+
+@keyframes cantSubtractWiggle {
+  0%, 100% { 
+    transform: translateX(0) scale(1); 
+    box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+  }
+  5%, 15%, 25%, 35%, 45%, 55%, 65%, 75% { 
+    transform: translateX(-6px) scale(1.05); 
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
+  }
+  10%, 20%, 30%, 40%, 50%, 60%, 70%, 80% { 
+    transform: translateX(6px) scale(1.05); 
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.6);
+  }
+  85% {
+    transform: translateX(-3px) scale(1.02);
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.4);
+  }
+  90% {
+    transform: translateX(3px) scale(1.02);
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.4);
+  }
+  95% {
+    transform: translateX(-1px) scale(1);
+    box-shadow: 0 0 5px rgba(244, 67, 54, 0.2);
+  }
+}
+
+/* ===== CHECKING ZERO ANIMATION ===== */
+/* Shows when checking a column that has 0 - can't borrow from it */
+
+.sub-cell-checking {
+  animation: checkingZeroPulse 1s ease-in-out;
+  color: #FF9800 !important;
+  border: 3px solid #FF9800 !important;
+  background-color: rgba(255, 152, 0, 0.15) !important;
+}
+
+@keyframes checkingZeroPulse {
+  0% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.7);
+  }
+  25% { 
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(255, 152, 0, 0.8);
+    background-color: rgba(255, 152, 0, 0.25);
+  }
+  50% { 
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.6);
+  }
+  75% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.4);
+  }
+  100% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 152, 0, 0);
+  }
+}
+
+/* ===== FOUND SOURCE ANIMATION ===== */
+/* Shows when a valid source for borrowing is found - highlights in green */
+
+.sub-cell-found {
+  animation: foundSourcePulse 1s ease-in-out;
+  color: #4CAF50 !important;
+  border: 3px solid #4CAF50 !important;
+  background-color: rgba(76, 175, 80, 0.2) !important;
+}
+
+@keyframes foundSourcePulse {
+  0% { 
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+  }
+  30% { 
+    transform: scale(1.2);
+    box-shadow: 0 0 25px rgba(76, 175, 80, 0.9);
+    background-color: rgba(76, 175, 80, 0.35);
+  }
+  60% { 
+    transform: scale(1.1);
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.7);
+  }
+  100% { 
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+  }
+}
+
+/* ===== DRAGDROP MODE ===== */
+
+.long-subtraction-grid[data-mode="dragDrop"] {
+  border: 2px solid #9C27B0;
+}
+
+.sub-cell-dragdrop {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.sub-cell-dragdrop:hover {
+  background-color: #E1F5FE !important;
+  border-color: #0288D1 !important;
+}
+
+.sub-digit-tile {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.sub-digit-tile:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+  background-color: #BBDEFB !important;
+}
+
+.sub-digit-tile:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.sub-dragdrop-digit-bank {
+  animation: fadeIn 0.3s ease;
+}
+
+.sub-dragdrop-controls {
+  margin-top: 15px;
+}
+
+.sub-dragdrop-controls button {
+  transition: all 0.2s ease;
+}
+
+.sub-dragdrop-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* ===== INPUT MODE ===== */
+
+.long-subtraction-grid[data-mode="input"] {
+  border: 2px solid #4CAF50;
+}
+
+/* ===== COMMON ANIMATIONS ===== */
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== VALIDATION STATES ===== */
+
+.sub-cell-correct {
+  background-color: #C8E6C9 !important;
+  border-color: #4CAF50 !important;
+}
+
+.sub-cell-incorrect {
+  background-color: #FFCDD2 !important;
+  border-color: #F44336 !important;
+}
+
+.sub-cell-missed {
+  background-color: #FFF9C4 !important;
+  border-color: #FFC107 !important;
+}
+
+/* ===== COMPLETION MESSAGES ===== */
+
+.sub-complete-message {
+  animation: fadeInUp 0.5s ease;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+
+@media (max-width: 768px) {
+  .long-subtraction-grid {
+    padding: 10px;
+  }
+  
+  .sub-animation-controls {
+    flex-wrap: wrap;
+  }
+  
+  .sub-dragdrop-digit-bank {
+    padding: 10px;
+  }
+}
+
+/* ===== THEME OVERRIDES ===== */
+
+.long-subtraction-grid.white-theme .sub-cell {
+  background-color: white;
+  color: #333;
+}
+
+.long-subtraction-grid.minimal-mode .sub-cell {
+  background-color: transparent;
+  border: none;
+}
+
+.long-subtraction-grid.minimal-mode .sub-line {
+  background-color: #333;
+}
+
+/* ===== GUIDED MODE DIGIT PANEL ===== */
+
+.sub-guided-digit-panel {
+  animation: fadeIn 0.3s ease;
+}
+
+.sub-digit-button {
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.sub-digit-button:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
+  background-color: #BBDEFB !important;
+}
+
+.sub-digit-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
