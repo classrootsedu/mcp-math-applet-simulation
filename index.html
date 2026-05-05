@@ -185,7 +185,21 @@
     
     <!-- Main app -->
     <script src="js/math-applet.js"></script>
-    
+
+    <!-- AI Scaffolding (additive; no behaviour change when AI_ENABLED is false) -->
+    <script src="js/ai/errors.js"></script>
+    <script src="js/ai/event-bus.js"></script>
+    <script src="js/ai/control-surface.js"></script>
+    <script src="js/ai/registry.js"></script>
+    <script src="js/ai/i18n-payload.js"></script>
+    <script src="js/ai/surfaces/page1-surface.js"></script>
+    <script src="js/ai/surfaces/long-division-surface.js"></script>
+    <script src="js/ai/surfaces/mtable-surface.js"></script>
+    <script src="js/ai/surfaces/nav-surface.js"></script>
+    <script src="js/ai/surfaces/page2-surface.js"></script>
+    <script src="js/ai/app-api.js"></script>
+    <script src="js/ai/bridge.js"></script>
+
     <script>
         // Additional initialization on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', function() {
