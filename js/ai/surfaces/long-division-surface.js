@@ -99,12 +99,7 @@
       for (let d = 0; d < 10; d++) {
         els.push({ id: `page2-digit-panel-${d}`, role: 'button', label: String(d) });
       }
-      // multiplication table (1-10)
-      const div = problem().divisor;
-      for (let m = 1; m <= 10; m++) {
-        els.push({ id: `page2-mtable-row-${m}`, role: 'row',
-                   label: { ui: `${div} × ${m} = ${div*m}`, en: `${div} × ${m} = ${div*m}`, i18nKey: null, params: { divisor: div, multiplier: m } } });
-      }
+      // Multiplication-table rows are owned by MTableSurface — don't duplicate them here.
       return els;
     }
 

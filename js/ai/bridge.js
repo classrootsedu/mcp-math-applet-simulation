@@ -47,7 +47,12 @@
     catch (e) {
       return { ok: false, error: { code: 'E_INTERNAL', message: e.message } };
     }
-    // If the method already returned an {ok, ...} object, pass through; else wrap.
+    // Two AppAPI return styles need to coexist:
+    //  - Methods like describePage/snapshot/transcript return plain objects (no `ok`).
+    //    We wrap them as { ok:true, result: <obj> } so handleCall can uniformly
+    //    extract `.result` and send it across the wire.
+    //  - Methods like admin.setQuestionIndex/reset and surface dispatch already
+    //    return { ok, result?, error? } envelopes — pass them through unchanged.
     if (result && typeof result === 'object' && 'ok' in result) return result;
     return { ok: true, result };
   }

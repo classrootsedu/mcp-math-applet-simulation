@@ -25,9 +25,10 @@
         if (m.uiElements)      uiElements.push(...m.uiElements);
         if (!goal && m.goal)   goal = m.goal;
       }
-      // Page-level admin actions (implemented on AppAPI.admin directly)
+      // Page-level admin actions. setQuestion is page-1-only (mid-flow replacement
+      // on page 2 is intentionally unsupported — navigate back to page 1 to change
+      // the dividend/divisor). setQuestionIndex and reset are global and available here.
       semanticActions.push(
-        { name: 'setQuestion',      args: { dividend: 'int>0', divisor: 'int>0' }, scope: 'admin' },
         { name: 'setQuestionIndex', args: { index: 'int>=0' },                     scope: 'admin' },
         { name: 'reset',            args: { to: 'page1|page2-fresh|currentPage-fresh' }, scope: 'admin' }
       );
