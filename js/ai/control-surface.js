@@ -25,6 +25,14 @@
 
     attach(_eventBus) { /* default no-op */ }
     detach()          { /* default no-op */ }
+
+    /**
+     * Optional. Surfaces override to provide tutor narration copy.
+     * Called by AppAPI envelope merger when tutor capability is active and
+     * the action is semantic (not UI, not admin).
+     * @returns {{input?: Object, tutor: Object, next: Object} | null}
+     */
+    getTutorPayload(_action, _result) { return null; }
   }
 
   global.AIControlSurface = AIControlSurface;

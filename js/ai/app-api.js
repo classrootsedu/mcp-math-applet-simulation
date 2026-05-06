@@ -171,7 +171,25 @@
         const action = { kind: 'semantic', name, args, source: 'ai', actionId, scope };
         eventBus.emit({ type: 'action.requested', source: 'ai', page, actionId,
                         payload: { name, args, scope } });
-        const result = registry.dispatch(page, action);
+        let result = registry.dispatch(page, action);
+        // Tutor envelope merge — only for non-admin semantic actions when tutor capability is on.
+        if (AppAPI._tutorCapabilityActive && scope !== 'admin') {
+          const owner = registry.findOwner(page, name);
+          if (owner && typeof owner.getTutorPayload === 'function') {
+            try {
+              const payload = owner.getTutorPayload(action, result);
+              if (payload && typeof payload === 'object') {
+                result = Object.assign({}, result, {
+                  input: payload.input || result.input,
+                  tutor: payload.tutor,
+                  next:  payload.next
+                });
+              }
+            } catch (e) {
+              console.error('[AppAPI] getTutorPayload threw', e);
+            }
+          }
+        }
         eventBus.emit({
           type:   result.ok ? 'action.completed' : 'action.rejected',
           source: 'ai',
