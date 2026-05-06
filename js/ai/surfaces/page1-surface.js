@@ -33,7 +33,7 @@
         problem: { dividend: q.dividend, divisor: q.divisor },
         goal:    { kind: 'navigate', target: 2 },
         semanticActions: [
-          { name: 'start',       args: {},                                  description: 'Begin solving' },
+          { name: 'start',       args: {},                                  pedagogical: false, description: 'Begin solving' },
           { name: 'setQuestion', args: { dividend: 'int>0', divisor: 'int>0' }, scope: 'admin',
             description: 'Replace the current question (admin)' },
           { name: 'setQuestionIndex', args: { index: 'int>=0' }, scope: 'admin',
@@ -122,6 +122,27 @@
         stepAfter: 'tapStartButton',
         validation: { correct: true },
         stateDelta: { 'problem': { dividend, divisor } }
+      };
+    }
+
+    getTutorPayload(action, result) {
+      const t = (key, params) => global.buildLocalizedPayload({ key, params });
+      if (action.name !== 'start') return null;
+      const q = currentProblem();
+      const params = { dividend: q.dividend, divisor: q.divisor };
+      const modality = (action.args && action.args._modality) || 'ai-direct';
+      const details  = (action.args && action.args._details)  || {};
+      return {
+        input: { action: action.name, args: action.args || {}, modality, details },
+        tutor: {
+          completionDialogue: t('tutor.start.correct', params),
+          talkingPoints: [ t('tutor.start.points.transition', params) ],
+          nextStepHint:  t('tutor.start.nextHint.transition', params)
+        },
+        next: {
+          possible: [ { name: 'chooseDividendDigits', args: { digits: 'int[]' } } ],
+          recommended: null
+        }
       };
     }
   }
