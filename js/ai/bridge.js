@@ -66,7 +66,7 @@
       return;
     }
     const requested = Array.isArray(data.capabilities) ? data.capabilities : [];
-    const granted = requested.filter(c => ['actions','events','transcript','admin'].includes(c));
+    const granted = requested.filter(c => ['actions','events','transcript','admin','tutor'].includes(c));
     // Drain any subscriptions from the previous session so the eventBus doesn't
     // keep fanning events to an orphaned caller after a re-handshake.
     if (session && session.subs) {
@@ -82,6 +82,10 @@
       origin,
       subs:         new Map() // subscriptionId → unsubscribe()
     };
+    // Wire the tutor capability flag for AppAPI envelope merging.
+    if (w.AppAPI) {
+      w.AppAPI._tutorCapabilityActive = granted.includes('tutor');
+    }
     // Emit bridge.handshake into the eventBus so subscribers / transcript see it.
     if (w.AppAPI && typeof w.AppAPI._emit === 'function') {
       w.AppAPI._emit({ type: 'bridge.handshake', source: 'system',

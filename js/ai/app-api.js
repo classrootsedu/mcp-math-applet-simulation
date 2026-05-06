@@ -182,7 +182,8 @@
         return result;
       });
     },
-    _actionSeq: 0
+    _actionSeq: 0,
+    _tutorCapabilityActive: false
   };
 
   // UI-level escape hatch — _invokeUI is shared by the `click` / `pressKey` proxies
