@@ -21,8 +21,8 @@
     getManifest() {
       return {
         semanticActions: [
-          { name: 'clickNext',     args: {}, description: 'Press the » button' },
-          { name: 'clickPrevious', args: {}, description: 'Press the « button' }
+          { name: 'clickNext',     args: {}, pedagogical: false, description: 'Press the » button' },
+          { name: 'clickPrevious', args: {}, pedagogical: false, description: 'Press the « button' }
         ],
         uiElements: [
           { id: `page${this._page}-next-button`,     role: 'button', label: { ui: '»', en: '»' } },
@@ -94,6 +94,46 @@
       return { ok: true, actionId: action.actionId, page: this._page,
                stepBefore: 'navIdle', stepAfter: 'navIdle',
                validation: { correct: true }, feedback: null, stateDelta: {} };
+    }
+
+    getTutorPayload(action, _result) {
+      const t = (key, params) => global.buildLocalizedPayload({ key, params });
+      const modality = (action.args && action.args._modality) || 'ai-direct';
+      const details  = (action.args && action.args._details)  || {};
+      const echoArgs = Object.assign({}, action.args);
+      delete echoArgs._modality; delete echoArgs._details;
+      const input = { action: action.name, args: echoArgs, modality, details };
+
+      if (action.name === 'clickNext') {
+        const qList = global.question || [];
+        const currentIndex = global.currentQuestionIndex || 0;
+        const wasLast = qList.length > 0 && currentIndex >= qList.length - 1;
+        const nextQ = wasLast ? null : qList[currentIndex + 1];
+        const params = nextQ
+          ? { nextDividend: nextQ.dividend, nextDivisor: nextQ.divisor }
+          : {};
+        return {
+          input,
+          tutor: {
+            completionDialogue: t(wasLast ? 'tutor.nav.next.lastQuestion' : 'tutor.nav.next.midBank', params),
+            talkingPoints: [],
+            nextStepHint: null
+          },
+          next: { possible: [], recommended: null }
+        };
+      }
+      if (action.name === 'clickPrevious') {
+        return {
+          input,
+          tutor: {
+            completionDialogue: t('tutor.nav.previous', {}),
+            talkingPoints: [],
+            nextStepHint: null
+          },
+          next: { possible: [], recommended: null }
+        };
+      }
+      return null;
     }
   }
 
