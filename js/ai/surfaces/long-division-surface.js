@@ -69,13 +69,13 @@
         goal: { kind: 'completeDivision',
                 target: { quotient: expectedQuotient(), remainder: expectedRemainder() } },
         semanticActions: [
-          { name: 'chooseDividendDigits',         args: { digits: 'int[]' } },
-          { name: 'chooseQuotientDigit',          args: { column: 'int>=0', value: 'digit' } },
-          { name: 'setPartialProduct',            args: { column: 'int>=0', value: 'digit' } },
-          { name: 'setSubtractionResult',         args: { column: 'int>=0', value: 'digit' } },
-          { name: 'bringDownDigit',               args: { fromColumn: 'int>=0' } },
-          { name: 'setRemainder',                 args: { value: 'digit' } },
-          { name: 'selectMultiplicationTableRow', args: { multiplier: 'int 1..10' } }
+          { name: 'chooseDividendDigits',         args: { digits: 'int[]' },                  pedagogical: true },
+          { name: 'chooseQuotientDigit',          args: { column: 'int>=0', value: 'digit' }, pedagogical: true },
+          { name: 'setPartialProduct',            args: { column: 'int>=0', value: 'digit' }, pedagogical: false },
+          { name: 'setSubtractionResult',         args: { column: 'int>=0', value: 'digit' }, pedagogical: false },
+          { name: 'bringDownDigit',               args: { fromColumn: 'int>=0' },             pedagogical: false },
+          { name: 'setRemainder',                 args: { value: 'digit' },                   pedagogical: true },
+          { name: 'selectMultiplicationTableRow', args: { multiplier: 'int 1..10' },          pedagogical: true }
         ],
         uiElements: this._buildUiElements()
       };
@@ -163,6 +163,141 @@
         return { ok: false, actionId: action.actionId,
                  error: { code: 'E_INTERNAL', message: e.message, details: { stack: e.stack } } };
       }
+    }
+
+    getTutorPayload(action, result) {
+      const t = (key, params) => global.buildLocalizedPayload({ key, params });
+      const h = handle();
+      if (!h) return null;
+
+      // Determine input modality.
+      const modality = (action.args && action.args._modality) || 'ai-direct';
+      const details  = (action.args && action.args._details)  || {};
+      // Strip our internal modality hints from the echoed args.
+      const echoArgs = Object.assign({}, action.args);
+      delete echoArgs._modality;
+      delete echoArgs._details;
+      const input = { action: action.name, args: echoArgs, modality, details };
+
+      // Find which step keyspace to use.
+      const stepKey = this._tutorStepKey(action.name);
+      if (!stepKey) return null;
+
+      // Categorize correct vs incorrect (and which error type).
+      const correct = result && result.validation && result.validation.correct === true;
+      const errorType = correct ? null : this._categorizeError(action, result);
+
+      // Build the completionDialogue.
+      const params = this._tutorParams(action, result, correct);
+      const completionKey = correct
+        ? `tutor.${stepKey}.correct`
+        : `tutor.${stepKey}.incorrect.${errorType || 'generic'}`;
+      const completionDialogue = t(completionKey, params);
+
+      // Build talkingPoints (2-3 variants per step).
+      const variants = correct
+        ? ['confirm', 'transition']
+        : ['reframe', 'encourage', 'askMtable'];
+      const talkingPoints = variants
+        .map(v => t(`tutor.${stepKey}.points.${v}`, params))
+        .filter(p => p.ui != null || p.en != null);
+
+      // Build nextStepHint.
+      const hintKey = correct
+        ? `tutor.${stepKey}.nextHint.transition`
+        : `tutor.${stepKey}.nextHint.retry`;
+      const nextStepHint = t(hintKey, params);
+
+      // Build the next.recommended block.
+      const next = this._tutorNext(action, result, correct);
+
+      return { input, tutor: { completionDialogue, talkingPoints, nextStepHint }, next };
+    }
+
+    _tutorStepKey(actionName) {
+      switch (actionName) {
+        case 'chooseDividendDigits':         return 'startingDigit';
+        case 'chooseQuotientDigit':          return 'quotient';
+        case 'setPartialProduct':            return 'product';
+        case 'setSubtractionResult':         return 'subtract';
+        case 'bringDownDigit':               return 'bringDown';
+        case 'setRemainder':                 return 'remainder';
+        case 'selectMultiplicationTableRow': return 'quotient';
+        default: return null;
+      }
+    }
+
+    _categorizeError(action, result) {
+      const accepted = action.args && action.args.value;
+      const expected = result && result.validation && result.validation.expected;
+      if (accepted === 0 && expected !== 0) return 'zero';
+      if (typeof accepted === 'number' && typeof expected === 'number') {
+        if (action.name === 'chooseQuotientDigit') {
+          const { divisor } = problem();
+          if (accepted * divisor > expected * divisor) return 'tooHigh';
+          if (accepted * divisor < expected * divisor) return 'tooLow';
+        }
+        if (action.name === 'setSubtractionResult' || action.name === 'setPartialProduct') {
+          if (accepted > expected) return 'tooHigh';
+          if (accepted < expected) return 'tooLow';
+        }
+      }
+      return 'generic';
+    }
+
+    _tutorParams(action, result, correct) {
+      const { dividend, divisor } = problem();
+      const accepted = action.args && action.args.value;
+      const expected = result && result.validation && result.validation.expected;
+      const params = { dividend, divisor, accepted, expected };
+      if (action.name === 'chooseQuotientDigit') {
+        const h = handle();
+        const idx = h ? h.getGuidedStepIndex() : 0;
+        const dividendDigits = String(dividend).split('').map(Number);
+        const value = dividendDigits[idx] !== undefined ? dividendDigits[idx] : dividend;
+        params.value = value;
+        params.product = correct ? expected * divisor : null;
+        params.productAccepted = (typeof accepted === 'number') ? accepted * divisor : null;
+        params.expectedProduct = (typeof expected === 'number') ? expected * divisor : null;
+        params.direction = (accepted > expected) ? 'smaller' : 'bigger';
+      }
+      return params;
+    }
+
+    _tutorNext(action, result, correct) {
+      const stepKey = this._tutorStepKey(action.name);
+      const params  = this._tutorParams(action, result, correct);
+      const t = (key, p) => global.buildLocalizedPayload({ key, params: p });
+      // Possible next actions in current step (after dispatch). For wrong answers, possibles
+      // remain the same as before (step didn't advance). For correct, _expectedActionsForStep
+      // gives the new step's actions.
+      const stepName = correct ? currentStep() : (result && result.stepBefore) || '';
+      const possibleNames = this._expectedActionsForStep(stepName);
+      const possible = possibleNames.map(name => {
+        const m = this.getManifest().semanticActions.find(a => a.name === name);
+        return m ? { name: m.name, args: m.args } : { name, args: {} };
+      });
+      // Recommended: same step's top action, with pre-computed args when knowable.
+      let recommended = null;
+      if (action.name === 'chooseQuotientDigit') {
+        const expected = result && result.validation && result.validation.expected;
+        recommended = {
+          name: 'chooseQuotientDigit',
+          args: { column: action.args.column, value: expected },
+          pedagogical: true,
+          rationale: t(`tutor.quotient.reco`, params)
+        };
+      } else if (action.name === 'setSubtractionResult') {
+        const expected = result && result.validation && result.validation.expected;
+        recommended = {
+          name: 'setSubtractionResult',
+          args: { column: action.args.column, value: expected },
+          pedagogical: false,
+          rationale: t(`tutor.subtract.reco`, params)
+        };
+      }
+      // (Other actions: keep recommended as null in v1.1 unless we add per-action computation later.)
+      return { possible, recommended };
     }
 
     _fillCell(rowKind, action, stepBefore, columnArg) {
