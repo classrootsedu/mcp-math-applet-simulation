@@ -1,0 +1,25 @@
+{
+  "name": "math-applet-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server exposing the math applet's window.AppAPI to LLM agents (Claude Code, Claude Desktop, etc.)",
+  "main": "mcp-applet-server.js",
+  "scripts": {
+    "start": "node mcp-applet-server.js",
+    "start:headless": "cross-env HEADLESS=true node mcp-applet-server.js",
+    "start:no-tutor": "cross-env TUTOR_MODE=false node mcp-applet-server.js",
+    "install:browser": "playwright install chromium"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^5.2.1",
+    "playwright": "^1.45.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

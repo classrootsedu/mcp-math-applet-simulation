@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "math-applet": {
+      "command": "node",
+      "args": ["E:/Downloads/G4C3M20A1_v1/mcp/mcp-applet-server.js"],
+      "env": {
+        "APPLET_URL": "http://localhost:8080/index.html?ai=1",
+        "HEADLESS": "false",
+        "TUTOR_MODE": "true"
+      }
+    }
+  }
+}

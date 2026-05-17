@@ -4355,6 +4355,31 @@
       };
     }, [applyGuidedDigit, guidedSteps, guidedStepIndex]);
 
+    /**
+     * Programmatic bring-down. The user-facing path is an inline onClick on the
+     * highlighted dividend digit (which animates the digit to the target cell);
+     * the AI surface needs an equivalent programmatic trigger that fills the
+     * target cell and advances the guided step. Skips the visual animation —
+     * the cell still fills correctly, just without the 610ms travel.
+     *
+     * @returns {{ ok: boolean, advancedTo: string|null }}
+     */
+    const bringDownNextDigit = React.useCallback(() => {
+      const step = guidedSteps[guidedStepIndex];
+      if (!step || step.type !== 'bringDown' || !step.cellKey) {
+        return { ok: false, advancedTo: null };
+      }
+      const targetKey = step.cellKey;
+      const value = step.correctValue;
+      setGuidedValues(prev => ({ ...prev, [targetKey]: value }));
+      setGuidedValidation(prev => ({ ...prev, [targetKey]: { isCorrect: true, correctValue: value, userValue: value } }));
+      if (guidedConfig.autoAdvance) {
+        setTimeout(advanceGuidedStep, 50);
+      }
+      const nextStep = guidedSteps[guidedStepIndex + 1];
+      return { ok: true, advancedTo: nextStep ? nextStep.type : 'complete' };
+    }, [guidedSteps, guidedStepIndex, guidedConfig.autoAdvance, advanceGuidedStep]);
+
     // Expose AI-facing grid handle. Only when AI scaffolding is active.
     React.useEffect(() => {
       if (typeof window === 'undefined') return;
@@ -4364,6 +4389,7 @@
       window.__longDivisionGridHandle = {
         applyDigit,
         selectStartingDigit: (digitIndex) => handleSelectStartingDigit(digitIndex),
+        bringDownNextDigit,
         getGuidedValues:    () => guidedValues,
         getGuidedValidation:() => guidedValidation,
         getGuidedSteps:     () => guidedSteps,
@@ -4378,8 +4404,8 @@
           delete window.__longDivisionGridHandle;
         }
       };
-    }, [applyDigit, handleSelectStartingDigit, guidedValues, guidedValidation, guidedSteps, guidedStepIndex,
-        dividend, divisor, selectedStartingDigits, mode]);
+    }, [applyDigit, handleSelectStartingDigit, bringDownNextDigit, guidedValues, guidedValidation,
+        guidedSteps, guidedStepIndex, dividend, divisor, selectedStartingDigits, mode]);
 
     const handleGuidedDigitClick = React.useCallback((digit) => {
       applyGuidedDigit(digit);

@@ -32,6 +32,7 @@
     if (!steps || idx >= steps.length) return 'complete';
     const s = steps[idx];
     switch (s.type) {
+      case 'selectStartingDigits':
       case 'startingDigits': return 'chooseDividendDigits';
       case 'quotient':       return 'chooseQuotientDigit';
       case 'partialProduct':
@@ -228,6 +229,16 @@
     }
 
     _categorizeError(action, result) {
+      // chooseDividendDigits compares ARRAY lengths, not digit values.
+      if (action.name === 'chooseDividendDigits') {
+        const accepted = action.args && action.args.digits;
+        const expected = result && result.validation && result.validation.expected;
+        if (Array.isArray(accepted) && Array.isArray(expected)) {
+          if (accepted.length > expected.length) return 'tooManyDigits';
+          if (accepted.length < expected.length) return 'notEnoughDigits';
+        }
+        return 'generic';
+      }
       const accepted = action.args && action.args.value;
       const expected = result && result.validation && result.validation.expected;
       if (accepted === 0 && expected !== 0) return 'zero';
@@ -247,6 +258,24 @@
 
     _tutorParams(action, result, correct) {
       const { dividend, divisor } = problem();
+      // chooseDividendDigits has array args; everything else has scalar `value`.
+      if (action.name === 'chooseDividendDigits') {
+        const acceptedArr = (action.args && action.args.digits) || [];
+        const expectedArr = (result && result.validation && result.validation.expected) || [];
+        const dStr = String(dividend);
+        const valueFromIdx = (arr) => {
+          if (!Array.isArray(arr) || arr.length === 0) return null;
+          const s = arr.map(i => dStr[i] || '').join('');
+          const n = parseInt(s, 10);
+          return isNaN(n) ? null : n;
+        };
+        return {
+          dividend, divisor,
+          accepted: acceptedArr,
+          expected: expectedArr,
+          value: valueFromIdx(correct ? expectedArr : acceptedArr)
+        };
+      }
       const accepted = action.args && action.args.value;
       const expected = result && result.validation && result.validation.expected;
       const params = { dividend, divisor, accepted, expected };
@@ -279,7 +308,15 @@
       });
       // Recommended: same step's top action, with pre-computed args when knowable.
       let recommended = null;
-      if (action.name === 'chooseQuotientDigit') {
+      if (action.name === 'chooseDividendDigits') {
+        const expected = result && result.validation && result.validation.expected;
+        recommended = {
+          name: 'chooseDividendDigits',
+          args: { digits: expected },
+          pedagogical: true,
+          rationale: t(`tutor.startingDigit.reco`, params)
+        };
+      } else if (action.name === 'chooseQuotientDigit') {
         const expected = result && result.validation && result.validation.expected;
         recommended = {
           name: 'chooseQuotientDigit',
@@ -305,14 +342,23 @@
       if (!h) return this._noHandle(action);
       const { value } = action.args || {};
       if (!Number.isInteger(value) || value < 0 || value > 9) return this._badArgs(action, 'value must be digit 0-9');
-      let cellKey;
       if (columnArg === 'column') {
         const col = action.args.column;
         if (!Number.isInteger(col) || col < 0) return this._badArgs(action, 'column must be int >= 0');
-        cellKey = `${rowKind}-${col}`;
-      } else {
-        cellKey = `${rowKind}-0`;
       }
+      // Read the actual cellKey from the active guided step rather than computing it.
+      // Different rows use different key shapes: `quotient-{c}`, `subtract-{r}-{c}`,
+      // `difference-{r}-{c}`, `remainder-0`, etc. The guided state machine tells us
+      // which cell is currently expected; trust that source rather than guessing.
+      const steps = h.getGuidedSteps();
+      const idx   = h.getGuidedStepIndex();
+      const step  = steps && steps[idx];
+      if (!step || !step.cellKey) {
+        return { ok: false, actionId: action.actionId,
+                 error: { code: 'E_DISABLED_ACTION',
+                          message: `no active guided step for ${action.name}` } };
+      }
+      const cellKey = step.cellKey;
       const r = h.applyDigit({ cellKey, value, source: action.source || 'ai' });
       // Use applyDigit's advancedTo (computed inside the wrapper before React's
       // setGuidedStepIndex flush) instead of re-querying currentStep, which would
@@ -332,14 +378,32 @@
     _bringDown(action, stepBefore) {
       const h = handle();
       if (!h) return this._noHandle(action);
-      // Bring-down currently happens automatically when guided step reaches 'bringDown';
-      // expose as a no-op confirmation that returns the new state.
+      // Trigger the grid's programmatic bring-down (fills the target cell + advances).
+      // The user-facing path is a click on the highlighted dividend digit; the surface
+      // calls the same end state without the 610ms animation.
+      if (typeof h.bringDownNextDigit !== 'function') {
+        // Older grid handle without the setter — best-effort no-op fallback.
+        return {
+          ok: true, actionId: action.actionId, page: 2,
+          stepBefore, stepAfter: currentStep(),
+          validation: { correct: true },
+          feedback: null,
+          stateDelta: {}
+        };
+      }
+      const r = h.bringDownNextDigit();
+      if (!r.ok) {
+        return { ok: false, actionId: action.actionId,
+                 error: { code: 'E_DISABLED_ACTION',
+                          message: 'current step is not bringDown' } };
+      }
       return {
         ok: true, actionId: action.actionId, page: 2,
-        stepBefore, stepAfter: currentStep(),
+        stepBefore,
+        stepAfter: r.advancedTo || 'complete',
         validation: { correct: true },
-        feedback: null,
-        stateDelta: {}
+        feedback: { kind: 'correct', sound: 'correct.mp3' },
+        stateDelta: { 'stepContext.bringDown': true }
       };
     }
 
@@ -355,17 +419,42 @@
                  error: { code: 'E_NOT_INTERACTABLE',
                           message: 'grid handle does not expose selectStartingDigit' } };
       }
-      // The grid's selectStartingDigit only accepts sequential additions (0, then 1, then 2…)
-      // and removes from the end. Apply the digits in order.
-      for (const d of digits) {
-        h.selectStartingDigit(d);
+      // Validate against canonical pedagogy: smallest leftmost prefix of the dividend
+      // whose value is ≥ divisor. For 96 ÷ 3 the answer is [0] (9 ≥ 3); for 13 ÷ 2 it's
+      // [0, 1] (13 ≥ 2 because 1 < 2 alone). [0, 1] for 96÷3 is "tooManyDigits" — wrong.
+      const expected = this._expectedStartingDigits();
+      const correct  = digits.length === expected.length &&
+                       digits.every((d, i) => d === expected[i]);
+
+      // Only mutate grid state if the selection is correct. Wrong selections leave the
+      // grid alone so the AI's coaching response (using the tutor block) makes sense.
+      if (correct) {
+        for (const d of digits) h.selectStartingDigit(d);
       }
+
       return {
         ok: true, actionId: action.actionId, page: 2,
-        stepBefore, stepAfter: currentStep(),
-        validation: { correct: true, accepted: digits },
-        stateDelta: { 'stepContext.selectedStartingDigits': digits }
+        stepBefore, stepAfter: correct ? currentStep() : stepBefore,
+        validation: { correct, expected, accepted: digits },
+        feedback: correct
+          ? { kind: 'correct',  sound: 'correct.mp3' }
+          : { kind: 'incorrect', sound: 'wrong.mp3' },
+        stateDelta: correct ? { 'stepContext.selectedStartingDigits': digits } : {}
       };
+    }
+
+    _expectedStartingDigits() {
+      const { dividend, divisor } = problem();
+      const dStr = String(dividend);
+      let acc = 0;
+      for (let i = 0; i < dStr.length; i++) {
+        acc = acc * 10 + Number(dStr[i]);
+        if (acc >= divisor) {
+          return Array.from({ length: i + 1 }, (_, k) => k);
+        }
+      }
+      // Whole dividend < divisor. Take everything (quotient will be 0).
+      return dStr.split('').map((_, i) => i);
     }
 
     _mtableRow(action, stepBefore) {

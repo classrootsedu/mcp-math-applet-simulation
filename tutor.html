@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Math Tutor — AI-driven</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, system-ui, sans-serif; }
+  body { display: flex; }
+  #applet  { flex: 1.5; border: 0; }
+  #chat    { flex: 1; display: flex; flex-direction: column; min-width: 360px; max-width: 520px;
+             border-left: 1px solid #ddd; background: #fafafa; }
+  header   { padding: 10px 14px; background: #1e293b; color: white; font-size: 14px;
+             display: flex; align-items: center; gap: 8px; }
+  header b { font-weight: 600; }
+  header .status { margin-left: auto; font-size: 11px; opacity: 0.8; }
+  .setup   { padding: 14px; border-bottom: 1px solid #ddd; background: #fffbe6; font-size: 13px; }
+  .setup input, .setup select { width: 100%; padding: 6px 8px; font-family: monospace; font-size: 12px;
+                                margin-top: 4px; }
+  .setup label { display: block; margin-top: 8px; font-weight: 600; }
+  .setup .row  { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .setup .row label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; margin: 0; }
+  .setup button { margin-top: 12px; padding: 6px 12px; cursor: pointer; }
+  #log     { flex: 1; overflow-y: auto; padding: 10px 14px; }
+  .msg     { margin-bottom: 14px; }
+  .msg.user      { color: #0d47a1; }
+  .msg.assistant { color: #111; }
+  .msg.system    { color: #888; font-size: 11px; font-style: italic; }
+  .msg.tool      { color: #555; font-size: 11px; font-family: monospace;
+                   background: #eef; padding: 6px 8px; border-radius: 4px;
+                   white-space: pre-wrap; word-break: break-all; }
+  .msg .who { font-weight: 600; font-size: 11px; text-transform: uppercase;
+              letter-spacing: 0.5px; opacity: 0.6; margin-bottom: 4px; }
+  #input   { display: flex; gap: 6px; padding: 10px; border-top: 1px solid #ddd; background: white; }
+  #input textarea { flex: 1; min-height: 60px; padding: 6px 8px; resize: vertical;
+                    font-family: inherit; font-size: 14px; }
+  #input button   { padding: 0 14px; cursor: pointer; }
+  #micBtn  { padding: 0 12px; font-size: 18px; cursor: pointer; background: #f3f4f6; border: 1px solid #d1d5db; }
+  #micBtn.listening { background: #fee2e2; border-color: #ef4444; animation: pulse 1.2s infinite; }
+  #micBtn:disabled  { opacity: 0.4; cursor: not-allowed; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+  header .speaking { font-size: 16px; opacity: 0; transition: opacity 0.15s; }
+  header .speaking.on { opacity: 1; }
+  .voice-row { display: flex; gap: 6px; align-items: center; padding: 6px 10px;
+               border-bottom: 1px solid #eee; background: #f9fafb; font-size: 11px; color: #555; }
+  .voice-row select, .voice-row input { font-size: 11px; }
+  .voice-row label { display: inline-flex; align-items: center; gap: 3px; }
+  .err     { color: #c00; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<iframe id="applet" src="index.html?ai=1"></iframe>
+
+<div id="chat">
+  <header>
+    <span>🧮</span>
+    <b>Math Tutor</b>
+    <span id="speaking" class="speaking">🔊</span>
+    <span id="status" class="status">disconnected</span>
+  </header>
+
+  <div id="voiceRow" class="voice-row" style="display:none;">
+    <label><input id="speechToggle" type="checkbox" checked> Speech</label>
+    <span id="voiceControls" style="display:flex; gap:6px; align-items:center; flex:1;">
+      <select id="voiceSel" style="flex:1;"></select>
+      <label>Rate <input id="rateSel" type="range" min="0.7" max="1.3" step="0.05" value="0.95" style="width:80px;"></label>
+    </span>
+    <label><input id="jsonToggle" type="checkbox"> Show JSON</label>
+  </div>
+
+  <div id="setup" class="setup">
+    <div class="row">
+      <span style="font-weight:600;">Provider:</span>
+      <label><input type="radio" name="provider" value="anthropic" checked> Anthropic</label>
+      <label><input type="radio" name="provider" value="openai"> OpenAI</label>
+    </div>
+
+    <label for="apikey">API key (stored in this browser only):</label>
+    <input id="apikey" type="password" placeholder="sk-ant-... or sk-...">
+
+    <label for="model">Model:</label>
+    <select id="model"></select>
+
+    <button id="startBtn">Start tutoring session</button>
+    <div style="margin-top:8px; font-size:11px; color:#666;">
+      OpenAI requires a tool-capable chat model (gpt-4o family). Reasoning-only models (o1, o3) won't work.
+    </div>
+  </div>
+
+  <div id="log"></div>
+
+  <form id="input" style="display:none;">
+    <textarea id="userInput" placeholder="Type or hold the mic to speak…"></textarea>
+    <button id="micBtn" type="button" title="Press and hold to speak">🎤</button>
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+// ===== Configuration =====
+const STORAGE = {
+  KEY_ANT:  'tutor.apiKey.anthropic',
+  KEY_OAI:  'tutor.apiKey.openai',
+  MODEL:    'tutor.model',
+  PROVIDER: 'tutor.provider'
+};
+
+const MODELS = {
+  anthropic: [
+    { value: 'claude-opus-4-7',           label: 'claude-opus-4-7 (default)' },
+    { value: 'claude-sonnet-4-6',         label: 'claude-sonnet-4-6 (faster, cheaper)' },
+    { value: 'claude-haiku-4-5-20251001', label: 'claude-haiku-4-5 (fastest)' }
+  ],
+  openai: [
+    { value: 'gpt-4o',                    label: 'gpt-4o (default)' },
+    { value: 'gpt-4o-mini',               label: 'gpt-4o-mini (cheaper)' },
+    { value: 'gpt-4-turbo',               label: 'gpt-4-turbo' }
+  ]
+};
+
+// ===== Display configuration =====
+// Code-level default. Flip to true to see every tool call's JSON inline by default.
+// Runtime override comes from the "Show JSON" checkbox (persisted to localStorage).
+const SHOW_TOOL_JSON_DEFAULT = false;
+const JSON_KEY = 'tutor.showToolJson';
+let showToolJson = (() => {
+  const saved = localStorage.getItem(JSON_KEY);
+  if (saved !== null) return saved === 'true';
+  return SHOW_TOOL_JSON_DEFAULT;
+})();
+
+// ===== DOM helpers =====
+const el = (id) => document.getElementById(id);
+const log = el('log');
+const statusEl = el('status');
+
+function appendMsg(who, text, cls = '') {
+  const div = document.createElement('div');
+  div.className = 'msg ' + (cls || who);
+  // Tool messages are tagged so the JSON toggle can hide/show them in bulk.
+  if (cls === 'tool') div.dataset.tool = '1';
+  const label = document.createElement('div');
+  label.className = 'who';
+  label.textContent = who;
+  div.appendChild(label);
+  const body = document.createElement('div');
+  body.textContent = text;
+  div.appendChild(body);
+  log.appendChild(div);
+  // Hide tool messages immediately if the toggle is off.
+  if (cls === 'tool' && !showToolJson) div.style.display = 'none';
+  log.scrollTop = log.scrollHeight;
+  // TTS: speak only assistant text (not tool/system/user echoes), and only if speech is set up.
+  if ((cls === 'assistant' || (cls === '' && who === 'assistant')) && text) {
+    speak(text);
+  }
+  return div;
+}
+
+// Apply current showToolJson value to all already-rendered tool messages.
+function applyJsonVisibility() {
+  document.querySelectorAll('#log .msg[data-tool="1"]').forEach(m => {
+    m.style.display = showToolJson ? '' : 'none';
+  });
+}
+
+function setStatus(text) { statusEl.textContent = text; }
+
+function getProvider() {
+  const r = document.querySelector('input[name="provider"]:checked');
+  return r ? r.value : 'anthropic';
+}
+
+function fillModelOptions(provider) {
+  const sel = el('model');
+  sel.innerHTML = '';
+  for (const m of MODELS[provider]) {
+    const opt = document.createElement('option');
+    opt.value = m.value;
+    opt.textContent = m.label;
+    sel.appendChild(opt);
+  }
+  // Restore saved model if it still applies to this provider; else default.
+  const saved = localStorage.getItem(STORAGE.MODEL);
+  if (saved && MODELS[provider].some(m => m.value === saved)) sel.value = saved;
+  else sel.value = MODELS[provider][0].value;
+}
+
+function fillApiKeyForProvider(provider) {
+  const k = provider === 'anthropic'
+    ? localStorage.getItem(STORAGE.KEY_ANT) || ''
+    : localStorage.getItem(STORAGE.KEY_OAI) || '';
+  el('apikey').value = k;
+  el('apikey').placeholder = provider === 'anthropic' ? 'sk-ant-...' : 'sk-...';
+}
+
+// ===== postMessage bridge to the applet =====
+const applet = el('applet').contentWindow;
+const pending = new Map();
+let nextReqId = 1;
+
+window.addEventListener('message', (ev) => {
+  const d = ev.data;
+  if (!d || d.v !== 1) return;
+  if (d.type === 'ai.handshake.ack') {
+    setStatus(d.ok ? 'connected (tutor)' : 'handshake failed');
+    if (!d.ok) appendMsg('system', 'Handshake failed: ' + JSON.stringify(d.error));
+  } else if (d.type === 'ai.response') {
+    const fn = pending.get(d.requestId);
+    if (fn) { pending.delete(d.requestId); fn(d); }
+  }
+});
+
+function appletCall(method, params) {
+  return new Promise((resolve, reject) => {
+    const requestId = 'r' + (nextReqId++);
+    pending.set(requestId, (resp) => resolve(resp.ok ? resp.result : { ok: false, error: resp.error }));
+    applet.postMessage({ v: 1, type: 'ai.call', requestId, method, params }, '*');
+    setTimeout(() => {
+      if (pending.has(requestId)) {
+        pending.delete(requestId);
+        reject(new Error('timeout calling ' + method));
+      }
+    }, 8000);
+  });
+}
+
+function waitForApplet() {
+  return new Promise((resolve) => {
+    const tryHandshake = () => {
+      try {
+        const reqId = 'h_' + Date.now();
+        const onAck = (ev) => {
+          if (ev.data && ev.data.type === 'ai.handshake.ack' && ev.data.requestId === reqId) {
+            window.removeEventListener('message', onAck);
+            resolve(ev.data);
+          }
+        };
+        window.addEventListener('message', onAck);
+        applet.postMessage({
+          v: 1, type: 'ai.handshake', requestId: reqId,
+          caller: { name: 'tutor.html', version: '0.2' },
+          capabilities: ['actions', 'events', 'transcript', 'admin', 'tutor']
+        }, '*');
+        setTimeout(() => { if (statusEl.textContent === 'disconnected') tryHandshake(); }, 600);
+      } catch (e) { setTimeout(tryHandshake, 600); }
+    };
+    tryHandshake();
+  });
+}
+
+// ===== Tool definitions (provider-agnostic JSON Schema) =====
+// Each entry: { name, description, parameters (JSON Schema) }
+// Adapters below convert to Anthropic / OpenAI shapes.
+const BASE_TOOLS = [
+  { name: 'describe_page', description: 'Get the schema and live state of the current page. Returns page number, semanticActions, uiElements, goal, and stateBySurface (currentStep, expectedActions, etc.). Call this whenever you need to know what to do next.', parameters: { type: 'object', properties: {} } },
+  { name: 'check_goal',    description: 'Check whether the page-level objective has been met.', parameters: { type: 'object', properties: {} } },
+  { name: 'check_session_goal', description: 'Has the multi-question session been completed?', parameters: { type: 'object', properties: {} } },
+  { name: 'start',         description: 'Page 1 — tap Start to begin and navigate to Page 2.', parameters: { type: 'object', properties: {} } },
+  { name: 'choose_dividend_digits', description: 'Page 2 — select which dividend digit indices to start dividing. For 96÷3, [0]. PEDAGOGICAL: ask the student first.',
+    parameters: { type: 'object', properties: { digits: { type: 'array', items: { type: 'integer', minimum: 0 } } }, required: ['digits'] } },
+  { name: 'choose_quotient_digit', description: 'Page 2 — fill quotient digit at column. PEDAGOGICAL: ask the student first; pass their answer (right or wrong).',
+    parameters: { type: 'object', properties: { column: { type: 'integer', minimum: 0 }, value: { type: 'integer', minimum: 0, maximum: 9 } }, required: ['column','value'] } },
+  { name: 'set_partial_product', description: 'Page 2 — partial product (often auto-filled by grid; check describe_page first).',
+    parameters: { type: 'object', properties: { column: { type: 'integer', minimum: 0 }, value: { type: 'integer', minimum: 0, maximum: 9 } }, required: ['column','value'] } },
+  { name: 'set_subtraction_result', description: 'Page 2 — subtraction result. Mechanical, not pedagogical.',
+    parameters: { type: 'object', properties: { column: { type: 'integer', minimum: 0 }, value: { type: 'integer', minimum: 0, maximum: 9 } }, required: ['column','value'] } },
+  { name: 'bring_down_digit', description: 'Page 2 — bring down next dividend digit.',
+    parameters: { type: 'object', properties: { fromColumn: { type: 'integer', minimum: 0 } }, required: ['fromColumn'] } },
+  { name: 'set_remainder', description: 'Page 2 — final remainder. Pedagogical.',
+    parameters: { type: 'object', properties: { value: { type: 'integer', minimum: 0, maximum: 9 } }, required: ['value'] } },
+  { name: 'select_multiplication_table_row', description: 'Page 2 — click a row of the multiplication table.',
+    parameters: { type: 'object', properties: { multiplier: { type: 'integer', minimum: 1, maximum: 10 } }, required: ['multiplier'] } },
+  { name: 'click_next', description: 'Click ». On Page 2 mid-bank: next question. On last: back to Page 1. On Page 1: Page 2.', parameters: { type: 'object', properties: {} } },
+  { name: 'click_previous', description: 'Click «.', parameters: { type: 'object', properties: {} } },
+  { name: 'set_question', description: 'Admin — replace dividend/divisor.',
+    parameters: { type: 'object', properties: { dividend: { type: 'integer', minimum: 1 }, divisor: { type: 'integer', minimum: 1 } }, required: ['dividend','divisor'] } },
+  { name: 'reset', description: 'Admin — reset state and optionally navigate.',
+    parameters: { type: 'object', properties: { to: { type: 'string', enum: ['page1','page2-fresh','currentPage-fresh'] } }, required: ['to'] } }
+];
+
+const TOOL_PATHS = {
+  describe_page: 'describePage',  check_goal: 'checkGoal',  check_session_goal: 'checkSessionGoal',
+  start: 'actions.start',
+  choose_dividend_digits: 'actions.chooseDividendDigits',
+  choose_quotient_digit:  'actions.chooseQuotientDigit',
+  set_partial_product:    'actions.setPartialProduct',
+  set_subtraction_result: 'actions.setSubtractionResult',
+  bring_down_digit:       'actions.bringDownDigit',
+  set_remainder:          'actions.setRemainder',
+  select_multiplication_table_row: 'actions.selectMultiplicationTableRow',
+  click_next: 'actions.clickNext',  click_previous: 'actions.clickPrevious',
+  set_question: 'admin.setQuestion',  reset: 'admin.reset'
+};
+
+const TOOLS_ANTHROPIC = BASE_TOOLS.map(t => ({
+  name: t.name, description: t.description, input_schema: t.parameters
+}));
+
+const TOOLS_OPENAI = BASE_TOOLS.map(t => ({
+  type: 'function',
+  function: { name: t.name, description: t.description, parameters: t.parameters }
+}));
+
+// ===== Conversation state (per session) =====
+const SYSTEM_PROMPT = `You are an AI tutor for a 4th-grade student learning long division. You drive an interactive math applet through tools.
+
+WORKFLOW:
+1. Begin every session by calling describe_page to orient yourself.
+2. Speak to the student in plain English (1-2 sentences max per turn).
+3. Use the math-applet tools to advance the applet based on the student's response.
+4. Use the tutor block in tool results to coach. Specifically:
+   - tutor.completionDialogue.en  — outcome-aware narration
+   - tutor.talkingPoints[].en     — variations you can pick from
+   - tutor.nextStepHint.en        — what to say next
+   - next.recommended             — the right move (with pedagogical flag)
+
+CRITICAL RULES — never break these:
+
+1. EVERY clear student answer MUST trigger a tool call in the same turn. After the
+   student answers, you call the matching applet tool with their answer BEFORE replying
+   conversationally. Do NOT just chat back without calling a tool. The whole point of
+   this session is that the applet shows the student visual feedback. If you reply
+   without calling a tool, the applet stays frozen and the student learns nothing.
+
+2. For PEDAGOGICAL actions (next.recommended.pedagogical === true), pass the STUDENT'S
+   LITERAL ANSWER — even if you can tell it's wrong. Do NOT silently substitute the
+   correct answer. The applet's wrong-answer feedback (red flash, wrong sound, coaching
+   copy in the response) is the whole point of these actions. Wrong answers are a
+   feature, not a problem.
+
+3. If the student's answer truly doesn't map to ANY valid input value (e.g. they say
+   "purple" for a math step), restate what they said and ask one clarifying question.
+   But for any answer that maps to a digit or position — even a wrong one — submit it.
+   Examples:
+   - student says "five" for chooseQuotientDigit → submit value: 5 (probably wrong; let
+     the applet redirect them)
+   - student says "the 9" for chooseDividendDigits → submit digits: [0]
+   - student says "purple" → ask for clarification; do NOT submit anything
+
+4. MECHANICAL CHAINING. After any tool result whose stepAfter is a non-pedagogical step
+   (writeSubtractionResult, bringDownDigit, writePartialProduct), you MUST call the
+   matching tool IMMEDIATELY in the same turn — before saying anything to the student.
+   Use next.recommended.args directly. Then read the new result. If THAT result also
+   advances to another non-pedagogical step, call the next tool too. Keep chaining
+   until the next step is pedagogical OR the goal is reached. Only THEN reply to the
+   student.
+
+   NEVER say "let's move on" or "next we subtract" without actually calling the tool —
+   the cell stays empty, the student sees nothing happen, and they get stuck.
+
+   Concrete example after a correct quotient digit on 96 ÷ 3:
+     a) chooseQuotientDigit({column:0, value:3}) → result says stepAfter:writeSubtractionResult
+     b) IMMEDIATELY call setSubtractionResult({column:0, value:0}) using next.recommended.args
+     c) That result says stepAfter:bringDownDigit
+     d) IMMEDIATELY call bringDownDigit({fromColumn:1}) using next.recommended.args
+     e) That result says stepAfter:chooseQuotientDigit (PEDAGOGICAL — stop chaining)
+     f) NOW reply to the student: "Now we have 6 to divide. How many times does 3 go
+        into 6?"
+
+ACTION SEMANTICS:
+- chooseDividendDigits({digits: int[]}) — the array contains digit POSITIONS (0-based
+  indices) of the dividend, NOT digit values. For 96 ÷ 3, position 0 is the "9", position
+  1 is the "6". Ask the student something like: "Should we start with just the 9, or the
+  whole 96?" Then map: "the 9" or "first digit" → [0]; "96" or "both" → [0,1]. If they
+  say a digit value that isn't a valid index (like "5" for the dividend 96), point that
+  out and re-ask.
+- chooseQuotientDigit({column, value}) — value is the actual digit (0-9). Just ask
+  "How many times does <divisor> go into <currentValue>?" and pass their answer.
+- selectMultiplicationTableRow({multiplier}) — multiplier is 1..10. Use this when the
+  student wants to consult the table; equivalent to chooseQuotientDigit at the quotient step.
+
+PEDAGOGY (when pedagogical === false):
+- setSubtractionResult, bringDownDigit, setPartialProduct: mechanical follow-ups.
+- Auto-fill from next.recommended.args without asking the student. Narrate briefly
+  ("9 minus 9 is 0, let's bring down the 6") so they follow the math.
+
+ERROR RECOVERY:
+- If a tool returns ok:true but stepBefore === stepAfter, the grid silently rejected the
+  cell (cellKey didn't match the expected step). Call describe_page; the
+  stateBySurface.<id>.currentStep tells you what the grid is actually expecting.
+- If a tool returns ok:false, read the error.code: E_DISABLED_ACTION means you called
+  the wrong action for the current step; E_BAD_ARGS means args were malformed.
+
+STYLE:
+- One conversational reply per turn — short, age-appropriate, encouraging.
+- Don't lecture. Prefer questions over explanations.
+- Celebrate correct answers briefly. After wrong answers, use the tutor block's
+  coaching copy and ask them to try again with a hint.
+
+OPENING — TWO TURNS, MANDATORY:
+
+The student's first message is just a greeting ("Hi!"). Do NOT call start on the first
+turn. The student needs a moment with Page 1 to absorb the topic before the working
+grid appears. Use TWO turns:
+
+────────────────
+TURN 1 — INTRO ONLY (page stays on Page 1):
+────────────────
+
+1. Call describe_page silently to read Page 1's problem (dividend ÷ divisor).
+2. Reply with these four parts IN ORDER:
+   a. Greeting — one short, warm sentence.
+   b. Name today's problem: "Today we'll solve [dividend] ÷ [divisor] together."
+   c. A 1-2 sentence intro to long division in 4th-grade words. Examples:
+        "Long division lets us divide a bigger number by a smaller one, step by step."
+        "We break the problem into easy pieces — divide, multiply, subtract, bring down."
+      Keep it simple. Don't lecture.
+   d. End with a clear question that asks for confirmation:
+        "Are you ready to start?" / "Want to begin?" / "Should we get started?"
+3. STOP HERE. DO NOT call start. DO NOT ask the math question (no "should we use the
+   9 or both digits"). Wait for the student to confirm.
+
+If the student replies with a question instead of confirmation ("what is long division?"),
+answer briefly in plain words, then re-invite ("ready to give it a try?"). Stay on
+Turn 1 — no start — until they confirm.
+
+────────────────
+TURN 2 — KICKOFF (after the student confirms with "yes" / "ready" / "okay" / similar):
+────────────────
+
+1. Reply with a brief acknowledgment: "Awesome, let's go!" or "Great, here we begin!"
+2. Call start (navigates to Page 2).
+3. Call describe_page (reads Page 2's active step).
+4. Continue your reply with the FIRST pedagogical question for the active step (usually
+   chooseDividendDigits — "Should we start dividing into just the 9, or both digits 96?").
+
+After Turn 2, every subsequent turn skips the intro and goes straight to calling tools
+based on the student's answer (per the rules above).`;
+
+let messages = [];   // provider-native format; reset per session
+let activeProvider = 'anthropic';
+let activeModel    = '';
+let activeApiKey   = '';
+
+// ===== Anthropic loop =====
+async function callAnthropic() {
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': activeApiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: activeModel,
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      tools: TOOLS_ANTHROPIC,
+      messages
+    })
+  });
+  if (!resp.ok) throw new Error('Anthropic ' + resp.status + ': ' + await resp.text());
+  return resp.json();
+}
+
+async function runAnthropicTurn() {
+  while (true) {
+    setStatus('thinking…');
+    let reply;
+    try { reply = await callAnthropic(); }
+    catch (e) { appendMsg('system', e.message, 'system'); setStatus('error'); return; }
+    setStatus('connected (tutor)');
+
+    messages.push({ role: 'assistant', content: reply.content });
+
+    const text = reply.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    if (text) appendMsg('claude', text, 'assistant');
+
+    const toolUses = reply.content.filter(b => b.type === 'tool_use');
+    if (toolUses.length === 0) return;
+
+    const toolResults = [];
+    for (const tu of toolUses) {
+      const path = TOOL_PATHS[tu.name];
+      let result;
+      try {
+        result = path
+          ? await appletCall(path, tu.input)
+          : { ok: false, error: { code: 'E_UNKNOWN_TOOL', message: 'no such tool: ' + tu.name } };
+      } catch (e) { result = { ok: false, error: { code: 'E_BRIDGE', message: e.message } }; }
+      const json = JSON.stringify(result, null, 2);
+      appendMsg('→ ' + tu.name, json, 'tool');
+      toolResults.push({ type: 'tool_result', tool_use_id: tu.id, content: json });
+    }
+    messages.push({ role: 'user', content: toolResults });
+  }
+}
+
+// ===== OpenAI loop =====
+async function callOpenAI() {
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + activeApiKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: activeModel,
+      messages,                 // already includes system as first msg
+      tools: TOOLS_OPENAI,
+      tool_choice: 'auto',
+      max_tokens: 1024
+    })
+  });
+  if (!resp.ok) throw new Error('OpenAI ' + resp.status + ': ' + await resp.text());
+  return resp.json();
+}
+
+async function runOpenAITurn() {
+  while (true) {
+    setStatus('thinking…');
+    let reply;
+    try { reply = await callOpenAI(); }
+    catch (e) { appendMsg('system', e.message, 'system'); setStatus('error'); return; }
+    setStatus('connected (tutor)');
+
+    const choice = reply.choices && reply.choices[0];
+    if (!choice) { appendMsg('system', 'OpenAI returned no choices', 'system'); return; }
+    const msg = choice.message;
+    // OpenAI requires the assistant message in history exactly as returned (including tool_calls).
+    messages.push({
+      role: 'assistant',
+      content: msg.content || null,
+      ...(msg.tool_calls ? { tool_calls: msg.tool_calls } : {})
+    });
+
+    if (msg.content) appendMsg('gpt', msg.content, 'assistant');
+
+    const toolCalls = msg.tool_calls || [];
+    if (toolCalls.length === 0) return;
+
+    for (const tc of toolCalls) {
+      let args = {};
+      try { args = JSON.parse(tc.function.arguments || '{}'); }
+      catch (e) { appendMsg('system', 'bad tool args from model: ' + tc.function.arguments, 'system'); }
+      const path = TOOL_PATHS[tc.function.name];
+      let result;
+      try {
+        result = path
+          ? await appletCall(path, args)
+          : { ok: false, error: { code: 'E_UNKNOWN_TOOL', message: 'no such tool: ' + tc.function.name } };
+      } catch (e) { result = { ok: false, error: { code: 'E_BRIDGE', message: e.message } }; }
+      const json = JSON.stringify(result, null, 2);
+      appendMsg('→ ' + tc.function.name, json, 'tool');
+      messages.push({ role: 'tool', tool_call_id: tc.id, content: json });
+    }
+  }
+}
+
+// ===== Turn lock: prevents concurrent runOneTurn() calls when the user sends
+//                 messages back-to-back. The provider loops mutate `messages`
+//                 with assistant + tool_result entries, so two concurrent runs
+//                 corrupt history. We serialize at the top level. =====
+let turnInFlight = false;
+
+function setTurnLocked(locked) {
+  turnInFlight = locked;
+  el('userInput').disabled = locked;
+  // The submit button is the only [type="submit"] inside the form.
+  const submitBtn = el('input').querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.disabled = locked;
+  // Mic respects both the speech master AND the turn lock.
+  el('micBtn').disabled = locked || !speechEnabled || !SR;
+}
+
+async function runOneTurn() {
+  if (turnInFlight) {
+    appendMsg('system', 'Previous turn still running — message queued in chat history but not sent until current turn finishes.', 'system');
+    return;
+  }
+  setTurnLocked(true);
+  try {
+    return await (activeProvider === 'openai' ? runOpenAITurn() : runAnthropicTurn());
+  } finally {
+    setTurnLocked(false);
+  }
+}
+
+// ===== Session bootstrap =====
+function initMessages() {
+  if (activeProvider === 'openai') {
+    // OpenAI: system as the first message.
+    messages = [{ role: 'system', content: SYSTEM_PROMPT }];
+  } else {
+    // Anthropic: system is a separate field on the API call, not in messages.
+    messages = [];
+  }
+}
+
+// ===== Speech (STT + TTS via Web Speech API) =====
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const synth = window.speechSynthesis || null;
+
+const VOICE_KEY  = 'tutor.voiceURI';
+const RATE_KEY   = 'tutor.rate';
+const SPEECH_KEY = 'tutor.speechEnabled';
+
+let recognition  = null;
+let isListening  = false;
+let preferredVoice = null;
+let speakRate    = parseFloat(localStorage.getItem(RATE_KEY) || '0.95');
+// Single master switch for both STT + TTS. Default: on if browser supports either.
+let speechEnabled = (() => {
+  const saved = localStorage.getItem(SPEECH_KEY);
+  if (saved !== null) return saved === 'true';
+  return true; // default on
+})();
+let userIsSpeaking = false;
+
+function populateVoices() {
+  if (!synth) return;
+  const voices = synth.getVoices().filter(v => v.lang && v.lang.toLowerCase().startsWith('en'));
+  const sel = el('voiceSel');
+  if (!sel) return;
+  sel.innerHTML = '';
+  // Heuristic kid-friendly defaults: prefer Microsoft Aria/Jenny/Zira on Windows,
+  // Google US English (Female) on Chrome, Samantha on macOS. Otherwise first English voice.
+  const PREFERRED_NAMES = [
+    'Microsoft Aria', 'Microsoft Jenny', 'Microsoft Zira',
+    'Google US English', 'Samantha', 'Karen', 'Allison'
+  ];
+  const saved = localStorage.getItem(VOICE_KEY);
+  voices.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v.voiceURI;
+    opt.textContent = `${v.name} (${v.lang})`;
+    sel.appendChild(opt);
+  });
+  let chosen = voices.find(v => v.voiceURI === saved);
+  if (!chosen) {
+    for (const name of PREFERRED_NAMES) {
+      chosen = voices.find(v => v.name.includes(name));
+      if (chosen) break;
+    }
+  }
+  if (!chosen) chosen = voices[0];
+  if (chosen) {
+    sel.value = chosen.voiceURI;
+    preferredVoice = chosen;
+  }
+}
+
+function speak(text) {
+  if (!synth || !speechEnabled) return;
+  if (!text || !text.trim()) return;
+  // Strip markdown-ish noise that TTS reads literally.
+  const cleaned = text
+    .replace(/`/g, '')
+    .replace(/\*+/g, '')
+    .replace(/_+/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+  // Interrupt any ongoing utterance.
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(cleaned);
+  if (preferredVoice) u.voice = preferredVoice;
+  u.rate = speakRate;
+  u.pitch = 1.0;
+  u.volume = 1.0;
+  u.onstart = () => el('speaking').classList.add('on');
+  u.onend   = () => el('speaking').classList.remove('on');
+  u.onerror = () => el('speaking').classList.remove('on');
+  synth.speak(u);
+}
+
+function startListening() {
+  if (!SR) { alert('Speech recognition is not supported in this browser. Try Chrome or Edge.'); return; }
+  if (isListening) return;
+  // Cancel any AI speech so the mic isn't picking up the speakers.
+  if (synth) synth.cancel();
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = true;
+  recognition.continuous = false;
+  recognition.maxAlternatives = 1;
+
+  const ta = el('userInput');
+  let finalTranscript = '';
+  recognition.onresult = (ev) => {
+    let interim = '';
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const t = ev.results[i][0].transcript;
+      if (ev.results[i].isFinal) finalTranscript += t;
+      else interim += t;
+    }
+    ta.value = (finalTranscript + interim).trim();
+  };
+  recognition.onerror = (ev) => {
+    appendMsg('system', 'Mic error: ' + ev.error, 'system');
+    stopListening(false);
+  };
+  recognition.onend = () => {
+    isListening = false;
+    el('micBtn').classList.remove('listening');
+    userIsSpeaking = false;
+    // Auto-submit if we captured something.
+    if (ta.value.trim()) {
+      el('input').requestSubmit();
+    }
+  };
+  isListening = true;
+  userIsSpeaking = true;
+  el('micBtn').classList.add('listening');
+  recognition.start();
+}
+
+function stopListening(autoSubmit = true) {
+  if (recognition && isListening) {
+    try { recognition.stop(); } catch (_) {}
+  }
+  isListening = false;
+  el('micBtn').classList.remove('listening');
+  userIsSpeaking = false;
+}
+
+// Voice list isn't ready immediately; refresh on the voiceschanged event.
+if (synth) {
+  populateVoices();
+  synth.addEventListener && synth.addEventListener('voiceschanged', populateVoices);
+}
+
+// ===== UI wiring =====
+function refreshSetup() {
+  const provider = getProvider();
+  fillModelOptions(provider);
+  fillApiKeyForProvider(provider);
+}
+
+document.querySelectorAll('input[name="provider"]').forEach(r => {
+  r.addEventListener('change', refreshSetup);
+});
+// Restore saved provider
+const savedProvider = localStorage.getItem(STORAGE.PROVIDER);
+if (savedProvider) {
+  const r = document.querySelector(`input[name="provider"][value="${savedProvider}"]`);
+  if (r) r.checked = true;
+}
+refreshSetup();
+
+el('startBtn').addEventListener('click', async () => {
+  const apiKey = el('apikey').value.trim();
+  if (!apiKey) { alert('API key required'); return; }
+  const model = el('model').value;
+  const provider = getProvider();
+
+  activeProvider = provider;
+  activeModel    = model;
+  activeApiKey   = apiKey;
+
+  localStorage.setItem(STORAGE.PROVIDER, provider);
+  localStorage.setItem(STORAGE.MODEL, model);
+  localStorage.setItem(provider === 'anthropic' ? STORAGE.KEY_ANT : STORAGE.KEY_OAI, apiKey);
+
+  setStatus('handshaking…');
+  appendMsg('system', `Provider: ${provider} · Model: ${model}`, 'system');
+  appendMsg('system', 'Waiting for the applet iframe to load…', 'system');
+
+  const ack = await waitForApplet();
+  if (!ack.ok) { appendMsg('system', 'Handshake failed: ' + JSON.stringify(ack.error), 'system'); return; }
+  appendMsg('system', 'Connected. Tutor capability: ' + (ack.capabilities.includes('tutor') ? 'on' : 'off'), 'system');
+
+  // Switch the applet to English so the AI sees English hints in `currentHint.en`
+  // (the applet defaults to id; the en field mirrors whatever language is rendered).
+  // tutor.html and index.html are both served from localhost:8080 so cross-frame
+  // access is allowed (same origin).
+  try {
+    const wnd = el('applet').contentWindow;
+    if (wnd && wnd.i18n && typeof wnd.i18n.setLanguage === 'function') {
+      wnd.i18n.setLanguage('en');
+      appendMsg('system', 'Applet language: English (forced for AI clarity)', 'system');
+    }
+  } catch (_) { /* shouldn't happen on same origin; harmless if it does */ }
+
+  el('setup').style.display = 'none';
+  el('input').style.display = 'flex';
+  el('voiceRow').style.display = SR || synth ? 'flex' : 'none';
+
+  initMessages();
+  // Neutral opener — no pre-confirmation. Lets the AI introduce the topic and pause for
+  // the student to confirm before navigating to Page 2.
+  const opener = "Hi!";
+  messages.push({ role: 'user', content: opener });
+  appendMsg('you', opener, 'user');
+  await runOneTurn();
+});
+
+el('input').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  if (turnInFlight) {
+    // Hard-ignore. The user shouldn't be able to submit anyway (button + textarea
+    // are disabled), but defensive in case Enter fires through some other path.
+    return;
+  }
+  const ta = el('userInput');
+  const text = ta.value.trim();
+  if (!text) return;
+  ta.value = '';
+  messages.push({ role: 'user', content: text });
+  appendMsg('you', text, 'user');
+  await runOneTurn();
+});
+
+el('userInput').addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter' && !ev.shiftKey) {
+    ev.preventDefault();
+    el('input').requestSubmit();
+  }
+});
+
+// ===== Mic button (push-to-talk: click to start, click again to stop) =====
+// Disabled state is managed by applySpeechEnabled() — wire only the click handler here.
+el('micBtn').addEventListener('click', () => {
+  if (!speechEnabled || !SR) return;
+  if (isListening) stopListening(true);
+  else             startListening();
+});
+
+// ===== Voice settings wiring =====
+function applySpeechEnabled() {
+  el('speechToggle').checked = speechEnabled;
+  el('voiceControls').style.display = speechEnabled ? 'flex' : 'none';
+  // Mic button: disabled when speech is off OR when SR is unsupported.
+  el('micBtn').disabled = !speechEnabled || !SR;
+  el('micBtn').title = !SR
+    ? 'Speech recognition not supported in this browser. Use Chrome or Edge.'
+    : (!speechEnabled ? 'Speech is off — toggle Speech to enable.' : 'Press to speak');
+  if (!speechEnabled) {
+    if (synth) synth.cancel();
+    if (recognition && isListening) stopListening(false);
+  }
+}
+el('rateSel').value = String(speakRate);
+el('speechToggle').addEventListener('change', (ev) => {
+  speechEnabled = ev.target.checked;
+  localStorage.setItem(SPEECH_KEY, String(speechEnabled));
+  applySpeechEnabled();
+});
+el('rateSel').addEventListener('input', (ev) => {
+  speakRate = parseFloat(ev.target.value);
+  localStorage.setItem(RATE_KEY, String(speakRate));
+});
+el('voiceSel').addEventListener('change', (ev) => {
+  const v = (synth && synth.getVoices() || []).find(x => x.voiceURI === ev.target.value);
+  if (v) {
+    preferredVoice = v;
+    localStorage.setItem(VOICE_KEY, v.voiceURI);
+  }
+});
+applySpeechEnabled();
+
+// ===== JSON-visibility toggle =====
+el('jsonToggle').checked = showToolJson;
+el('jsonToggle').addEventListener('change', (ev) => {
+  showToolJson = ev.target.checked;
+  localStorage.setItem(JSON_KEY, String(showToolJson));
+  applyJsonVisibility();
+});
+</script>
+</body>
+</html>

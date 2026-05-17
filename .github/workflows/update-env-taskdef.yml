@@ -1,0 +1,85 @@
+name: Update ECS Task Environment Variables
+
+on:
+  workflow_dispatch:
+    inputs:
+      patch_json:
+        description: Optional. JSON object to merge in one shot, e.g. {"GROQ_MODEL":"..."}.
+        required: false
+        default: ""
+        type: string
+      delete_key:
+        description: Optional. Single key to delete from the environment array.
+        required: false
+        default: ""
+        type: string
+      key:
+        description: Single key to set (used if patch_json and delete_key are empty)
+        required: false
+        default: ""
+        type: string
+      value:
+        description: Value for key
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  AWS_ROLE_ARN: arn:aws:iam::372314668031:role/etp-tools-backend-prod-github-actions-ecs
+  ECS_CLUSTER: etp-tools-backend-prod-ecs
+  ECS_SERVICE: mcp-math-applet-simulation
+
+jobs:
+  update-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Fetch, Update, and Rollout ECS Task Definition
+        env:
+          PATCH_JSON: ${{ inputs.patch_json }}
+          DELETE_KEY: ${{ inputs.delete_key }}
+          KEY: ${{ inputs.key }}
+          VALUE: ${{ inputs.value }}
+        run: |
+          set -euo pipefail
+          
+          # Fetch the current active task definition ARN
+          TASK_DEF_ARN=$(aws ecs describe-services --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --query "services[0].taskDefinition" --output text)
+          
+          # Download the full task definition JSON
+          aws ecs describe-task-definition --region ${{ env.AWS_REGION }} --task-definition $TASK_DEF_ARN --query taskDefinition > task-definition.json
+          
+          # Apply the environment changes dynamically
+          if [ -n "${PATCH_JSON// }" ]; then
+            jq --argjson p "$PATCH_JSON" 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions[0].environment = ((.containerDefinitions[0].environment // []) | map({(.name): .value}) | add * $p | to_entries | map({name: .key, value: .value | tostring}))' task-definition.json > new-task-def.json
+          elif [ -n "${DELETE_KEY// }" ]; then
+            jq --arg k "$DELETE_KEY" 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions[0].environment = ((.containerDefinitions[0].environment // []) | map({(.name): .value}) | add | del(.[$k]) | to_entries | map({name: .key, value: .value | tostring}))' task-definition.json > new-task-def.json
+          else
+            if [ -z "${KEY// }" ]; then
+              echo "Provide either patch_json, delete_key, or key + value." >&2
+              exit 1
+            fi
+            jq --arg k "$KEY" --arg v "$VALUE" 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions[0].environment = ((.containerDefinitions[0].environment // []) | map({(.name): .value}) | add + {($k): $v} | to_entries | map({name: .key, value: .value | tostring}))' task-definition.json > new-task-def.json
+          fi
+          
+          # Register the new task definition
+          NEW_TASK_INFO=$(aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json file://new-task-def.json)
+          NEW_TASK_ARN=$(echo $NEW_TASK_INFO | jq -r '.taskDefinition.taskDefinitionArn')
+          
+          # Update the service using the newly registered task definition ARN
+          aws ecs update-service --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --task-definition ${NEW_TASK_ARN} --force-new-deployment
+          
+          echo "Waiting for service to reach steady state..."
+          aws ecs wait services-stable --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} || \
+          aws ecs wait services-stable --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} || \
+          aws ecs wait services-stable --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }}
