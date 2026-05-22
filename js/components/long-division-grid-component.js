@@ -4408,8 +4408,32 @@
         guidedSteps, guidedStepIndex, dividend, divisor, selectedStartingDigits, mode]);
 
     const handleGuidedDigitClick = React.useCallback((digit) => {
+      // Capture step BEFORE applyGuidedDigit can advance it
+      const step = getCurrentGuidedStep();
       applyGuidedDigit(digit);
-    }, [applyGuidedDigit]);
+
+      // Emit a student-sourced event so the postMessage bridge relays it to the parent
+      // frame (the demo frontend), which then forwards it to the AI tutor backend.
+      // Only source='student' events are relayed — 'ai' events are suppressed by the bridge
+      // to avoid feedback loops from mirrored MCP tool calls.
+      if (step && !guidedComplete && window.AppAPI && typeof window.AppAPI._emit === 'function') {
+        const correct = Number(digit) === Number(step.correctValue);
+        window.AppAPI._emit({
+          type: correct ? 'action.completed' : 'action.rejected',
+          source: 'student',
+          payload: {
+            name: step.type,
+            digit: Number(digit),
+            cellKey: step.cellKey,
+            validation: {
+              correct,
+              expected: Number(step.correctValue),
+              actual: Number(digit),
+            },
+          },
+        });
+      }
+    }, [applyGuidedDigit, getCurrentGuidedStep, guidedComplete]);
     
     // Global drag event listeners for guided mode
     React.useEffect(() => {

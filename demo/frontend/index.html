@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Tutor AI — Interactive Demo</title>
+  <style>
+    :root {
+      --bg: #0d1117; --bg2: #161b22; --bg3: #21262d;
+      --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+      --blue: #58a6ff; --green: #3fb950; --orange: #f0883e;
+      --red: #f85149; --purple: #bc8cff;
+      --student-bg: #1f3a5f; --ai-bg: #1e2530;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 9px 18px; display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    .logo { font-size: 1.05rem; font-weight: 700; }
+    .badge {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2px 8px;
+      font-size: 0.7rem; color: var(--muted); font-weight: 500;
+    }
+    .hcontrols { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+    .dot.on  { background: var(--green); animation: pulse 1.2s ease-in-out infinite; }
+    .dot.err { background: var(--red); }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.35} }
+    #status-txt { font-size: 0.78rem; color: var(--muted); }
+    button {
+      padding: 5px 13px; border-radius: 6px; border: 1px solid var(--border);
+      cursor: pointer; font-size: 0.8rem; font-weight: 600;
+      background: transparent; color: var(--text);
+      transition: opacity .15s;
+    }
+    button:hover:not(:disabled) { opacity: .75; }
+    button:disabled { opacity: .4; cursor: not-allowed; }
+    #startBtn { background: var(--green); border-color: #2ea043; color: #000; }
+
+    /* ── Main layout ── */
+    main { flex: 1; display: grid; grid-template-columns: 52% 48%; overflow: hidden; }
+
+    /* ── Left panel ── */
+    #left { display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+
+    .panel-title {
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 7px 14px; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em; color: var(--muted); flex-shrink: 0;
+    }
+
+    /* Architecture ribbon */
+    .arch {
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+      padding: 7px 10px; background: var(--bg2); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .anode {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 5px; padding: 3px 9px;
+      font-size: 0.68rem; font-weight: 600; transition: border-color .3s, color .3s;
+    }
+    .anode.lit { border-color: var(--orange); color: var(--orange); }
+    .aarr { color: var(--muted); font-size: .85rem; }
+
+    /* Applet iframe */
+    .iframe-wrap { flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; }
+    .iframe-outer { flex: 1; position: relative; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; min-height: 0; }
+    iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; background: #fff; }
+    .mirror-badge {
+      position: absolute; top: 6px; right: 6px; background: var(--green); color: #000;
+      border-radius: 4px; padding: 2px 7px; font-size: .65rem; font-weight: 800;
+      opacity: 0; transition: opacity .25s; pointer-events: none;
+    }
+    .mirror-badge.show { opacity: 1; }
+    .iframe-note { font-size: .67rem; color: var(--muted); text-align: center; }
+
+    /* Tool log (collapsible) */
+    .tool-log-wrap { flex-shrink: 0; border-top: 1px solid var(--border); max-height: 150px; }
+    .tool-log-header {
+      background: var(--bg2); padding: 5px 12px; font-size: .68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+      cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+      user-select: none;
+    }
+    .tool-log-header:hover { color: var(--text); }
+    #tool-log { overflow-y: auto; max-height: 110px; padding: 4px 8px; display: flex; flex-direction: column; gap: 3px; }
+    .tlog-entry { font-size: .7rem; padding: 3px 7px; border-radius: 4px; border-left: 3px solid; }
+    .tlog-call   { background: rgba(240,136,62,.08); border-color: var(--orange); color: var(--orange); }
+    .tlog-result { background: rgba(63,185,80,.08);  border-color: var(--green);  color: var(--green); }
+    .tlog-name   { font-weight: 700; font-family: monospace; }
+
+    /* ── Right panel (chat) ── */
+    #right { display: flex; flex-direction: column; overflow: hidden; }
+
+    #messages {
+      flex: 1; overflow-y: auto; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      scroll-behavior: smooth;
+    }
+
+    /* Chat bubbles */
+    .bubble-wrap { display: flex; flex-direction: column; max-width: 88%; }
+    .bubble-wrap.ai    { align-self: flex-start; }
+    .bubble-wrap.human { align-self: flex-end; }
+
+    .bubble-label { font-size: .66rem; color: var(--muted); margin-bottom: 3px; padding: 0 4px; }
+    .bubble-wrap.human .bubble-label { text-align: right; }
+
+    .bubble {
+      padding: 9px 13px; border-radius: 12px;
+      font-size: .83rem; line-height: 1.55;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    .bubble.ai    { background: var(--ai-bg); border: 1px solid var(--border); border-top-left-radius: 2px; }
+    .bubble.human { background: var(--student-bg); border: 1px solid #1d4070; border-top-right-radius: 2px; color: #90c8f8; }
+    .bubble.status-msg { background: var(--bg2); border: 1px solid var(--border); color: var(--muted); font-style: italic; font-size: .75rem; align-self: center; border-radius: 20px; padding: 4px 14px; }
+    .bubble.error-msg  { background: rgba(248,81,73,.08); border: 1px solid rgba(248,81,73,.3); color: var(--red); }
+
+    /* Typing indicator */
+    .typing { display: flex; gap: 4px; padding: 6px 4px; }
+    .typing span {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--muted);
+      animation: bounce .9s ease-in-out infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { 0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)} }
+
+    /* Welcome placeholder */
+    .welcome {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; color: var(--muted); text-align: center; padding: 24px;
+    }
+    .welcome-icon { font-size: 2.5rem; }
+    .welcome h2 { font-size: .95rem; color: var(--text); }
+    .welcome p  { font-size: .8rem; max-width: 280px; line-height: 1.5; }
+
+    /* Input area */
+    #input-area {
+      flex-shrink: 0; padding: 10px 14px;
+      background: var(--bg2); border-top: 1px solid var(--border);
+      display: flex; gap: 8px; align-items: flex-end;
+    }
+    #msg-input {
+      flex: 1; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 12px; color: var(--text);
+      font-size: .83rem; font-family: inherit; resize: none; max-height: 100px;
+      outline: none; line-height: 1.4;
+    }
+    #msg-input:focus { border-color: var(--blue); }
+    #msg-input::placeholder { color: var(--muted); }
+    #sendBtn {
+      background: var(--blue); border-color: #388bfd; color: #000;
+      padding: 8px 16px; border-radius: 8px; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🎓 Math Tutor AI</span>
+  <span class="badge">LangGraph</span>
+  <span class="badge">MCP</span>
+  <span class="badge">Groq LLM</span>
+  <div class="hcontrols">
+    <div class="dot" id="dot"></div>
+    <span id="status-txt">Ready</span>
+    <button id="resetBtn" onclick="resetSession()">↺ Reset</button>
+    <button id="startBtn" onclick="startSession()">▶ Start Session</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ══ Left: Applet ══ -->
+  <div id="left">
+    <div class="panel-title">Interactive Math Applet</div>
+
+    <div class="arch">
+      <div class="anode" id="n-bedrock">Groq LLM</div>
+      <span class="aarr">⇄</span>
+      <div class="anode" id="n-lg">LangGraph</div>
+      <span class="aarr">⇄</span>
+      <div class="anode" id="n-mcp">MCP Server</div>
+      <span class="aarr">⇄</span>
+      <div class="anode" id="n-app">Applet</div>
+    </div>
+
+    <div class="iframe-wrap">
+      <div class="iframe-outer">
+        <iframe id="applet" src="http://localhost:8080/index.html?ai=1" title="Long Division Applet" allow="autoplay"></iframe>
+        <div class="mirror-badge" id="mirror-badge">⚡ MIRRORING</div>
+      </div>
+      <div class="iframe-note">Click digits in the applet to answer, or type in the chat — the AI responds to both</div>
+    </div>
+
+    <!-- Tool log -->
+    <div class="tool-log-wrap">
+      <div class="tool-log-header" onclick="toggleToolLog()">
+        <span>🔧 MCP Tool Log</span>
+        <span id="tlog-toggle">▲ collapse</span>
+      </div>
+      <div id="tool-log"></div>
+    </div>
+  </div>
+
+  <!-- ══ Right: Chat ══ -->
+  <div id="right">
+    <div class="panel-title">AI Tutor Chat</div>
+
+    <div id="messages">
+      <div class="welcome">
+        <div class="welcome-icon">🤖</div>
+        <h2>Ready to learn long division?</h2>
+        <p>Click <strong>▶ Start Session</strong> to begin. The AI will guide you step by step — type your answers in the box below, or click directly in the applet.</p>
+      </div>
+    </div>
+
+    <div id="input-area">
+      <textarea id="msg-input" rows="1"
+        placeholder="Type your answer or ask a question… (Enter to send)"
+        onkeydown="handleKey(event)"
+        oninput="autoResize(this)"
+        disabled></textarea>
+      <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// PostMessage bridge to the applet iframe
+// ══════════════════════════════════════════════════════════════════
+
+const appletFrame   = document.getElementById('applet');
+let appletReady     = false;
+let pendingReqs     = new Map();
+let reqN            = 0;
+let appletSubId     = null;
+
+const TOOL_TO_METHOD = {
+  describe_page:                   'describePage',
+  snapshot:                        'snapshot',
+  check_goal:                      'checkGoal',
+  check_session_goal:              'checkSessionGoal',
+  transcript:                      'transcript',
+  start:                           'actions.start',
+  choose_dividend_digits:          'actions.chooseDividendDigits',
+  choose_quotient_digit:           'actions.chooseQuotientDigit',
+  set_partial_product:             'actions.setPartialProduct',
+  set_subtraction_result:          'actions.setSubtractionResult',
+  bring_down_digit:                'actions.bringDownDigit',
+  set_remainder:                   'actions.setRemainder',
+  select_multiplication_table_row: 'actions.selectMultiplicationTableRow',
+  click_next:                      'actions.clickNext',
+  click_previous:                  'actions.clickPrevious',
+  reset:                           'admin.reset',
+  set_question:                    'admin.setQuestion',
+  set_question_index:              'admin.setQuestionIndex',
+  click:                           'actions.click',
+  press_key:                       'actions.pressKey',
+};
+
+function normTool(name) { return name.replace(/^[^_]+__/, ''); }
+
+function postApplet(msg) {
+  try { appletFrame.contentWindow.postMessage(msg, '*'); } catch (e) {}
+}
+
+function appletCall(method, params) {
+  return new Promise((resolve, reject) => {
+    const id = 'r_' + (++reqN);
+    pendingReqs.set(id, { resolve, reject });
+    postApplet({ v: 1, type: 'ai.call', requestId: id, method, params });
+    setTimeout(() => {
+      if (pendingReqs.has(id)) { pendingReqs.delete(id); reject(new Error('timeout')); }
+    }, 8000);
+  });
+}
+
+function appletHandshake() {
+  return new Promise((resolve, reject) => {
+    const id = 'h_' + (++reqN);
+    pendingReqs.set(id, { resolve, reject });
+    postApplet({
+      v: 1, type: 'ai.handshake', requestId: id,
+      caller: { name: 'tutor-demo', version: '1.0' },
+      capabilities: ['actions', 'events', 'admin', 'tutor'],
+    });
+    setTimeout(() => {
+      if (pendingReqs.has(id)) { pendingReqs.delete(id); reject(new Error('handshake timeout')); }
+    }, 5000);
+  });
+}
+
+function subscribeAppletEvents() {
+  const id = 's_' + (++reqN);
+  pendingReqs.set(id, {
+    resolve: (data) => {
+      appletSubId = data.subscriptionId;
+      document.getElementById('status-txt').textContent === 'Ready' &&
+        updateStatus('', 'Ready');
+    },
+    reject: () => {}
+  });
+  postApplet({ v: 1, type: 'ai.subscribe', requestId: id, filter: {} });
+}
+
+window.addEventListener('message', (ev) => {
+  const d = ev.data;
+  if (!d || d.v !== 1) return;
+
+  if (d.type === 'ai.handshake.ack') {
+    const p = pendingReqs.get(d.requestId);
+    if (p) { p.resolve(d); pendingReqs.delete(d.requestId); }
+    if (d.ok) {
+      appletReady = true;
+      document.getElementById('n-app').classList.add('lit');
+      setTimeout(() => document.getElementById('n-app').classList.remove('lit'), 1000);
+      subscribeAppletEvents();
+    }
+  }
+
+  if (d.type === 'ai.response') {
+    const p = pendingReqs.get(d.requestId);
+    if (p) {
+      d.ok ? p.resolve(d.result) : p.reject(d.error);
+      pendingReqs.delete(d.requestId);
+    }
+  }
+
+  // Events from student clicking the applet directly.
+  if (d.type === 'ai.event' && ws && ws.readyState === WebSocket.OPEN) {
+    const evt = d.event || {};
+    const t = evt.type || '';
+    const src = evt.source || '';
+
+    // Student answered a step (digit entry) — always relay.
+    // IMPORTANT: Only relay events with source='student'.
+    // Events with source='ai' come from mirrored LLM tool calls — relaying those
+    // would create a feedback loop (each AI tool call would trigger a second LLM turn).
+    if (src === 'student' && (t === 'action.completed' || t === 'action.rejected')) {
+      console.log('[bridge] student applet event →', t, evt.payload);
+      ws.send(JSON.stringify({ type: 'applet_event', event: evt }));
+      flashNodes(['n-app', 'n-mcp', 'n-lg', 'n-bedrock']);
+    }
+
+    // Student clicked the Back button — relay the page.changed event so the AI can
+    // call click_previous via MCP and keep the Playwright browser in sync.
+    // suppressNavEvent is set while we are mirroring a nav tool call to the iframe
+    // to prevent the resulting page.changed from looping back a second time.
+    else if (t === 'page.changed' && !suppressNavEvent) {
+      const p = evt.payload || {};
+      if (p.from === 2 && p.to === 1) {
+        console.log('[bridge] student clicked back →', p);
+        ws.send(JSON.stringify({ type: 'applet_event', event: evt }));
+        flashNodes(['n-app', 'n-mcp', 'n-lg', 'n-bedrock']);
+      }
+    }
+  }
+});
+
+appletFrame.addEventListener('load', () => {
+  setTimeout(() => {
+    appletHandshake()
+      .then(() => console.log('[bridge] ready'))
+      .catch((e) => console.warn('[bridge]', e.message));
+  }, 900);
+});
+
+async function mirrorToApplet(toolName, toolInput) {
+  const bare = normTool(toolName);
+  const method = TOOL_TO_METHOD[bare];
+  if (!method || !appletReady) return;
+  const badge = document.getElementById('mirror-badge');
+  badge.classList.add('show');
+  flashNodes(['n-mcp', 'n-app']);
+  // Suppress page.changed forwarding while we execute a navigation mirror so the
+  // resulting event does not loop back to the backend as a second "back" click.
+  if (bare === 'click_previous' || bare === 'click_next') suppressNavEvent = true;
+  try { await appletCall(method, toolInput || {}); } catch (e) {}
+  setTimeout(() => { suppressNavEvent = false; badge.classList.remove('show'); }, 700);
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// WebSocket connection to backend
+// ══════════════════════════════════════════════════════════════════
+
+let ws = null;
+let currentAiBubble = null;
+let currentAiText = '';
+let aiTypingEl = null;
+let sessionStarted = false;
+// Prevents the page.changed event triggered by an AI tool-call mirror from looping back
+// to the backend a second time (student-click → AI calls click_previous via MCP → mirror
+// fires click_previous in iframe → iframe emits page.changed again → would re-trigger AI).
+let suppressNavEvent = false;
+
+function connectWS() {
+  ws = new WebSocket('ws://localhost:5000/ws');
+
+  ws.onopen = () => console.log('[ws] connected');
+
+  ws.onmessage = (ev) => {
+    try { handleServerEvent(JSON.parse(ev.data)); }
+    catch (e) { console.error('[ws] parse error', e); }
+  };
+
+  ws.onerror = () => {
+    updateStatus('err', 'Connection error');
+    appendBubble('error-msg', null, '✗ Cannot connect to demo backend on port 5000. Is it running?');
+    enableInput(false);
+    document.getElementById('startBtn').disabled = false;
+  };
+
+  ws.onclose = () => {
+    if (sessionStarted) {
+      updateStatus('', 'Disconnected');
+    }
+  };
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// Server event handlers
+// ══════════════════════════════════════════════════════════════════
+
+function handleServerEvent(data) {
+  const { type, content, tool, input, output } = data;
+
+  if (type === 'status') {
+    appendBubble('status-msg', null, content);
+  }
+
+  else if (type === 'ai_text') {
+    removeTypingIndicator();
+    if (!currentAiBubble) {
+      const wrap = appendBubble('ai', '🤖 AI Tutor', '');
+      currentAiBubble = wrap.querySelector('.bubble');
+      currentAiText = '';
+    }
+    currentAiText += content;
+    currentAiBubble.textContent = currentAiText;
+    scrollMessages();
+  }
+
+  else if (type === 'ai_done') {
+    currentAiBubble = null;
+    currentAiText = '';
+    removeTypingIndicator();
+    enableInput(true);
+    flashNodes(['n-bedrock']);
+  }
+
+  else if (type === 'tool_call') {
+    const bare = normTool(tool || '');
+    addToolLog('call', bare, input);
+    flashNodes(['n-lg', 'n-mcp']);
+    mirrorToApplet(tool, input);
+  }
+
+  else if (type === 'tool_result') {
+    const bare = normTool(tool || '');
+    addToolLog('result', bare, output);
+    flashNodes(['n-mcp', 'n-lg', 'n-bedrock']);
+  }
+
+  else if (type === 'error') {
+    removeTypingIndicator();
+    appendBubble('error-msg', null, '⚠ ' + content);
+    enableInput(true);
+    updateStatus('err', 'Error');
+    document.getElementById('startBtn').disabled = false;
+  }
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// Chat UI helpers
+// ══════════════════════════════════════════════════════════════════
+
+function appendBubble(cls, label, text) {
+  const log = document.getElementById('messages');
+  const w = log.querySelector('.welcome');
+  if (w) w.remove();
+
+  if (cls === 'status-msg' || cls === 'error-msg') {
+    const b = document.createElement('div');
+    b.className = 'bubble ' + cls;
+    b.textContent = text;
+    log.appendChild(b);
+    scrollMessages();
+    return b;
+  }
+
+  const isHuman = cls === 'human';
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ' + cls;
+
+  if (label) {
+    const lbl = document.createElement('div');
+    lbl.className = 'bubble-label';
+    lbl.textContent = label;
+    wrap.appendChild(lbl);
+  }
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + cls;
+  bubble.textContent = text;
+  wrap.appendChild(bubble);
+
+  log.appendChild(wrap);
+  scrollMessages();
+  return wrap;
+}
+
+function showTypingIndicator() {
+  if (aiTypingEl) return;
+  const log = document.getElementById('messages');
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ai';
+  const lbl = document.createElement('div');
+  lbl.className = 'bubble-label';
+  lbl.textContent = '🤖 AI Tutor';
+  wrap.appendChild(lbl);
+  const b = document.createElement('div');
+  b.className = 'bubble ai typing';
+  b.innerHTML = '<span></span><span></span><span></span>';
+  wrap.appendChild(b);
+  aiTypingEl = wrap;
+  log.appendChild(wrap);
+  scrollMessages();
+}
+
+function removeTypingIndicator() {
+  if (aiTypingEl) { aiTypingEl.remove(); aiTypingEl = null; }
+}
+
+function scrollMessages() {
+  const log = document.getElementById('messages');
+  log.scrollTop = log.scrollHeight;
+}
+
+function addToolLog(kind, name, data) {
+  const log = document.getElementById('tool-log');
+  const entry = document.createElement('div');
+  entry.className = `tlog-entry tlog-${kind}`;
+  const label = kind === 'call' ? '→ CALL' : '← RESULT';
+  let preview = '';
+  if (data && typeof data === 'object') {
+    try { preview = JSON.stringify(data).slice(0, 80); } catch { preview = String(data).slice(0, 80); }
+  } else if (typeof data === 'string') {
+    preview = data.slice(0, 80);
+  }
+  entry.innerHTML = `<span class="tlog-name">${label} ${name}</span>  ${escHtml(preview)}`;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function enableInput(on) {
+  document.getElementById('msg-input').disabled = !on;
+  document.getElementById('sendBtn').disabled = !on;
+  if (on) document.getElementById('msg-input').focus();
+}
+
+function updateStatus(state, text) {
+  const dot = document.getElementById('dot');
+  dot.className = 'dot' + (state ? ' ' + state : '');
+  document.getElementById('status-txt').textContent = text;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function flashNodes(ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('lit');
+    setTimeout(() => el.classList.remove('lit'), 600);
+  });
+}
+
+let toolLogOpen = true;
+function toggleToolLog() {
+  const log = document.getElementById('tool-log');
+  const btn = document.getElementById('tlog-toggle');
+  toolLogOpen = !toolLogOpen;
+  log.style.display = toolLogOpen ? '' : 'none';
+  btn.textContent = toolLogOpen ? '▲ collapse' : '▼ expand';
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// Session control
+// ══════════════════════════════════════════════════════════════════
+
+function startSession() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    connectWS();
+    // Wait a moment for connection before sending
+    setTimeout(() => _doStart(), 300);
+    return;
+  }
+  _doStart();
+}
+
+function _doStart() {
+  document.getElementById('startBtn').disabled = true;
+  updateStatus('on', 'Active');
+  sessionStarted = true;
+  enableInput(false);
+  showTypingIndicator();
+  ws.send(JSON.stringify({ type: 'start' }));
+}
+
+function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+  appendBubble('human', '👤 You', text);
+  input.value = '';
+  input.style.height = '';
+  enableInput(false);
+  showTypingIndicator();
+  flashNodes(['n-bedrock', 'n-lg']);
+
+  ws.send(JSON.stringify({ type: 'message', content: text }));
+}
+
+function handleKey(ev) {
+  if (ev.key === 'Enter' && !ev.shiftKey) {
+    ev.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function resetSession() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'reset' }));
+  }
+
+  // Clear UI
+  document.getElementById('messages').innerHTML = `
+    <div class="welcome">
+      <div class="welcome-icon">🤖</div>
+      <h2>Ready to learn long division?</h2>
+      <p>Click <strong>▶ Start Session</strong> to begin. The AI will guide you step by step.</p>
+    </div>`;
+  document.getElementById('tool-log').innerHTML = '';
+
+  currentAiBubble = null; currentAiText = '';
+  aiTypingEl = null; sessionStarted = false;
+
+  updateStatus('', 'Ready');
+  document.getElementById('startBtn').disabled = false;
+  enableInput(false);
+
+  // Reload iframe
+  const f = document.getElementById('applet');
+  f.src = f.src;
+  appletReady = false;
+  f.addEventListener('load', () => {
+    setTimeout(() => appletHandshake().catch(() => {}), 900);
+  }, { once: true });
+}
+
+// Connect on page load
+connectWS();
+</script>
+</body>
+</html>

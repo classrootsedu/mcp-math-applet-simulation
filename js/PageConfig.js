@@ -472,7 +472,14 @@ const createOptimizedGridPositionPages = () => {
         props: {
           text: getI18nText('buttons.previous', '«'),
           onClick: () => {
-            if (typeof window !== 'undefined' && window.changePageAndNotify) {
+            if (typeof window === 'undefined') return;
+            // Route through AppAPI when AI mode is active so the event bus fires a
+            // page.changed event that the bridge can relay to the tutor backend.
+            // Without this, back-button clicks bypass AppAPI entirely and the
+            // Playwright-controlled browser never syncs to page 1.
+            if (window.AppAPI && typeof window.AppAPI.actions?.clickPrevious === 'function') {
+              window.AppAPI.actions.clickPrevious();
+            } else if (window.changePageAndNotify) {
               window.changePageAndNotify(1);
             }
           }
