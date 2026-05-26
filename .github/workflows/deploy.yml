@@ -46,38 +46,16 @@ jobs:
 
       - name: Force ECS rollout
         run: |
-          # Fetch the current active task definition ARN from the service
           TASK_DEF_ARN=$(aws ecs describe-services --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} --query "services[0].taskDefinition" --output text)
-
-          # Fetch the task definition
           aws ecs describe-task-definition --region ${{ env.AWS_REGION }} --task-definition $TASK_DEF_ARN --query taskDefinition > task-definition.json
 
-          # Create a new task definition with the specific datetime image tag
-          jq --arg IMAGE_TAG "${{ steps.build-image.outputs.image_tag }}" --arg REGISTRY "${{ steps.ecr.outputs.registry }}" --arg REPO "${{ env.ECR_REPOSITORY }}" '
-            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
-            | .containerDefinitions |= map(
-                if .name == "log_router" then
-                  .image = "amazon/aws-for-fluent-bit:stable"
-                elif .name == "mcp-math-applet-simulation" or .name == "app" then
-                  .image = ($REGISTRY + "/" + $REPO + ":" + $IMAGE_TAG)
-                  | .portMappings = [
-                      {"containerPort": 3000, "hostPort": 3000, "protocol": "tcp", "name": "mcp", "appProtocol": "http"},
-                      {"containerPort": 8080, "hostPort": 8080, "protocol": "tcp", "name": "applet", "appProtocol": "http"}
-                    ]
-                else
-                  .
-                end
-              )
-          ' task-definition.json > new-task-def.json
+          jq --arg IMAGE_TAG "${{ steps.build-image.outputs.image_tag }}" 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions |= map(if .name == "log_router" then .image = "amazon/aws-for-fluent-bit:stable" else .image = "${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:" + $IMAGE_TAG end)' task-definition.json > new-task-def.json
 
-          # Register the new task definition
           NEW_TASK_INFO=$(aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json file://new-task-def.json)
           NEW_TASK_ARN=$(echo $NEW_TASK_INFO | jq -r '.taskDefinition.taskDefinitionArn')
 
-          # Update the service using the newly registered task definition ARN
           aws ecs update-service --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --task-definition ${NEW_TASK_ARN} --force-new-deployment
 
-          # Wait up to 30 minutes for the deployment to finish successfully
           echo "Waiting for service to reach steady state..."
           aws ecs wait services-stable --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} || \
           aws ecs wait services-stable --region ${{ env.AWS_REGION }} --cluster ${{ env.ECS_CLUSTER }} --services ${{ env.ECS_SERVICE }} || \

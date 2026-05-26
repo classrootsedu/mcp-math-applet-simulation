@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/playwright:v1.45.0-jammy
+FROM mcr.microsoft.com/playwright:v1.59.1-jammy
 
 # Set working directory
 WORKDIR /app
@@ -13,12 +13,12 @@ COPY package.json package-lock.json ./
 COPY mcp/package.json mcp/package-lock.json ./mcp/
 
 # Install root dependencies
-RUN npm install
+RUN npm ci
 RUN npm install -g http-server
 
 # Install mcp server dependencies
 WORKDIR /app/mcp
-RUN npm install
+RUN npm ci
 
 # Copy source code
 WORKDIR /app
