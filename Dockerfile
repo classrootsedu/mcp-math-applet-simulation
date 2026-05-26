@@ -3,6 +3,11 @@ FROM mcr.microsoft.com/playwright:v1.45.0-jammy
 # Set working directory
 WORKDIR /app
 
+# start.sh waits for the applet HTTP server with curl
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
 # Copy package files first
 COPY package.json package-lock.json ./
 COPY mcp/package.json mcp/package-lock.json ./mcp/

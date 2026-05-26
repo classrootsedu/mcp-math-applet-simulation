@@ -53,17 +53,19 @@ jobs:
           aws ecs describe-task-definition --region ${{ env.AWS_REGION }} --task-definition $TASK_DEF_ARN --query taskDefinition > task-definition.json
 
           # Create a new task definition with the specific datetime image tag
-          jq --arg IMAGE_TAG "${{ steps.build-image.outputs.image_tag }}" '
+          jq --arg IMAGE_TAG "${{ steps.build-image.outputs.image_tag }}" --arg REGISTRY "${{ steps.ecr.outputs.registry }}" --arg REPO "${{ env.ECR_REPOSITORY }}" '
             del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
             | .containerDefinitions |= map(
                 if .name == "log_router" then
                   .image = "amazon/aws-for-fluent-bit:stable"
-                else
-                  .image = "${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:" + $IMAGE_TAG
+                elif .name == "mcp-math-applet-simulation" or .name == "app" then
+                  .image = ($REGISTRY + "/" + $REPO + ":" + $IMAGE_TAG)
                   | .portMappings = [
                       {"containerPort": 3000, "hostPort": 3000, "protocol": "tcp", "name": "mcp", "appProtocol": "http"},
                       {"containerPort": 8080, "hostPort": 8080, "protocol": "tcp", "name": "applet", "appProtocol": "http"}
                     ]
+                else
+                  .
                 end
               )
           ' task-definition.json > new-task-def.json
