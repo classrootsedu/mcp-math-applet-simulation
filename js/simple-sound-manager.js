@@ -89,15 +89,38 @@ const SimpleSoundManager = (() => {
     }
   };
 
+  // AI bridge: emit a student-sourced event to AppAPI whenever an answer
+  // is judged correct or wrong. The postMessage bridge relays these to the
+  // parent frame; the tutor backend reacts via describe_page. Components
+  // that emit their own richer event (e.g. long-division-grid) will produce
+  // two events — the parent debounces them.
+  const emitAnswerEvent = (isCorrect) => {
+    try {
+      if (typeof window !== 'undefined' &&
+          window.AppAPI && typeof window.AppAPI._emit === 'function') {
+        window.AppAPI._emit({
+          type: isCorrect ? 'action.completed' : 'action.rejected',
+          source: 'student',
+          payload: { validation: { correct: !!isCorrect } },
+        });
+        console.log(`🔗 [AI bridge] emitted action.${isCorrect ? 'completed' : 'rejected'} (source=student)`);
+      }
+    } catch (e) {
+      console.warn('🔗 [AI bridge] emit failed', e);
+    }
+  };
+
   // Specific sound functions
   const playAnswerSound = (isCorrect) => {
     playSound(isCorrect ? 'correct' : 'wrong', { volume: 0.7 });
+    emitAnswerEvent(isCorrect);
   };
 
   const playCarClickSound = (soundType) => {
     // Support both car click sounds and answer sounds (correct/wrong)
     if (soundType === 'correct' || soundType === 'wrong') {
       playSound(soundType, { volume: 0.7 });
+      emitAnswerEvent(soundType === 'correct');
     } else if (soundType === 'next' || soundType === 'previous') {
       playSound('click', { volume: 0.8, carNumber: soundType });
     } else {
