@@ -19,8 +19,9 @@ RUN npm install
 WORKDIR /app
 COPY . .
 
-# Expose MCP server port
+# Expose MCP server port (3000) and static applet server port (8080)
 EXPOSE 3000
+EXPOSE 8080
 
 # Make start script executable
 RUN chmod +x /app/start.sh

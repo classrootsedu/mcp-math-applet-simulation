@@ -3,7 +3,8 @@ name: Deploy to ECS
 on:
   push:
     branches:
-      - main
+      - master
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -52,7 +53,20 @@ jobs:
           aws ecs describe-task-definition --region ${{ env.AWS_REGION }} --task-definition $TASK_DEF_ARN --query taskDefinition > task-definition.json
 
           # Create a new task definition with the specific datetime image tag
-          jq --arg IMAGE_TAG "${{ steps.build-image.outputs.image_tag }}" 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy) | .containerDefinitions |= map(if .name == "log_router" then .image = "amazon/aws-for-fluent-bit:stable" else .image = "${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:" + $IMAGE_TAG end)' task-definition.json > new-task-def.json
+          jq --arg IMAGE_TAG "${{ steps.build-image.outputs.image_tag }}" '
+            del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+            | .containerDefinitions |= map(
+                if .name == "log_router" then
+                  .image = "amazon/aws-for-fluent-bit:stable"
+                else
+                  .image = "${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:" + $IMAGE_TAG
+                  | .portMappings = [
+                      {"containerPort": 3000, "hostPort": 3000, "protocol": "tcp", "name": "mcp", "appProtocol": "http"},
+                      {"containerPort": 8080, "hostPort": 8080, "protocol": "tcp", "name": "applet", "appProtocol": "http"}
+                    ]
+                end
+              )
+          ' task-definition.json > new-task-def.json
 
           # Register the new task definition
           NEW_TASK_INFO=$(aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json file://new-task-def.json)
