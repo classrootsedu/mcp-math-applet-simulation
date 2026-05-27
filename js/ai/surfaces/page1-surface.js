@@ -61,6 +61,17 @@
       };
     }
 
+    // AI idle auto-step: the only step on page 1 is to begin. We pass a
+    // semantic (non-ui) action so _start tags its emit source:'ai' (the host
+    // bridge filters to source:'student', so this never loops back as a
+    // student turn).
+    autoStep() {
+      return this._start(
+        { name: 'start', actionId: 'autostep-' + Date.now(), kind: 'semantic' },
+        'tapStartButton',
+      );
+    }
+
     checkGoal() {
       const cp = (typeof global.getCurrentPage === 'function') ? global.getCurrentPage() : 1;
       return { reached: cp === 2, actual: { currentPage: cp } };

@@ -1129,8 +1129,12 @@
       };
     }, []);
 
-    // Digit selection handlers
-    const handleSelectStartingDigit = React.useCallback((digitIndex) => {
+    // Digit selection handlers.
+    // `source` defaults to 'student' (a real click). The AI idle auto-step
+    // path passes 'ai' so the emitted event is source:'ai' — the host bridge
+    // only relays source:'student', so AI-driven selections don't loop back
+    // as a new student turn.
+    const handleSelectStartingDigit = React.useCallback((digitIndex, source = 'student') => {
       // Prevent any clicks while interaction is locked
       if (checkInteractionLocked()) {
         return;
@@ -1171,7 +1175,7 @@
           );
           window.AppAPI._emit({
             type: 'action.completed',
-            source: 'student',
+            source: source,
             payload: {
               name: 'selectStartingDigit',
               digitIndex,
@@ -4430,6 +4434,9 @@
       window.__longDivisionGridHandle = {
         applyDigit,
         selectStartingDigit: (digitIndex) => handleSelectStartingDigit(digitIndex),
+        // AI idle auto-step path — emits source:'ai' so it isn't relayed back
+        // to the tutor as a student turn (loop-safe).
+        aiSelectStartingDigit: (digitIndex) => handleSelectStartingDigit(digitIndex, 'ai'),
         bringDownNextDigit,
         getGuidedValues:    () => guidedValues,
         getGuidedValidation:() => guidedValidation,

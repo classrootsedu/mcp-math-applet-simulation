@@ -117,6 +117,54 @@
       };
     }
 
+    // AI idle auto-step: perform the SINGLE next correct guided step using the
+    // applet's own answer knowledge. Uses loop-safe handle methods:
+    //   • applyDigit / bringDownNextDigit do NOT emit a student event.
+    //   • dividend selection uses aiSelectStartingDigit (source:'ai' path) so
+    //     the host bridge (source:'student' only) doesn't echo it as a turn.
+    autoStep() {
+      const h = handle();
+      if (!h) return { ok: false, error: { code: 'E_NOT_INTERACTABLE', message: 'long-division grid not mounted' } };
+      const step = currentStep();
+      if (step === 'complete' || step === 'unknown') {
+        return { ok: false, error: { code: 'E_DONE', message: 'no pending step' } };
+      }
+
+      // Dividend-digit selection — canonical expected indices (e.g. [0] for 96÷3).
+      if (step === 'chooseDividendDigits') {
+        const digits = this._expectedStartingDigits();
+        const sel = (typeof h.aiSelectStartingDigit === 'function')
+          ? h.aiSelectStartingDigit
+          : h.selectStartingDigit;
+        if (typeof sel === 'function') {
+          for (const d of digits) sel(d);
+        }
+        return { ok: true, page: 2, stepBefore: step, stepAfter: currentStep(),
+                 validation: { correct: true, expected: digits, accepted: digits }, autoStepped: true };
+      }
+
+      // Bring-down — mechanical, no value.
+      if (step === 'bringDownDigit') {
+        const r = (typeof h.bringDownNextDigit === 'function') ? h.bringDownNextDigit() : { ok: false };
+        return { ok: !!r.ok, page: 2, stepBefore: step, stepAfter: r.advancedTo || currentStep(),
+                 validation: { correct: true }, autoStepped: true };
+      }
+
+      // Cell-fill steps (quotient / partial product / subtraction / remainder):
+      // read the active guided step's correctValue + cellKey and apply it.
+      const steps = (typeof h.getGuidedSteps === 'function') ? h.getGuidedSteps() : null;
+      const idx   = (typeof h.getGuidedStepIndex === 'function') ? h.getGuidedStepIndex() : 0;
+      const gs    = steps && steps[idx];
+      if (!gs || gs.correctValue === undefined || gs.cellKey == null) {
+        return { ok: false, error: { code: 'E_NO_STEP', message: `no correctValue for step ${step}` } };
+      }
+      const r = h.applyDigit({ cellKey: gs.cellKey, value: Number(gs.correctValue), source: 'ai' });
+      return { ok: true, page: 2, stepBefore: step,
+               stepAfter: r.correct ? (r.advancedTo || 'complete') : step,
+               validation: { correct: r.correct, expected: r.expected, accepted: Number(gs.correctValue) },
+               autoStepped: true };
+    }
+
     _expectedActionsForStep(step) {
       switch (step) {
         case 'chooseDividendDigits':  return ['chooseDividendDigits'];

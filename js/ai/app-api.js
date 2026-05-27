@@ -69,6 +69,37 @@
       });
     },
 
+    // ----- AI idle auto-step -----
+    // Perform the SINGLE next correct guided step on the current page, using
+    // the applet's own knowledge of the answer. Called by the host on an idle
+    // timeout (via ai.call method:"aiAutoStep") so the student visibly sees
+    // the step happen. Delegates to the active page's surface.autoStep().
+    //
+    // Crucially this runs IN the applet against the live iframe state, so it
+    // does the right thing regardless of what the server-side MCP browser
+    // thinks the state is. It is also reliable where the LLM is not — the
+    // model narrates "I'll select 9" without emitting a tool call; this does
+    // the actual move. Emits source:'ai' so the host bridge (which only
+    // relays source:'student') does not echo it back as a student turn.
+    aiAutoStep() {
+      return safeCall(() => {
+        const page = currentPage();
+        const surfaces = registry.forPage(page) || [];
+        for (const s of surfaces) {
+          if (typeof s.autoStep !== 'function') continue;
+          const r = s.autoStep();
+          if (r && r.ok !== false) {
+            eventBus.emit({ type: 'action.completed', source: 'ai', page,
+                            payload: { name: 'aiAutoStep', surface: s.id, result: r } });
+            console.log('🔗 [AI bridge] aiAutoStep performed on', s.id, '→', r.stepAfter || r);
+            return r;
+          }
+        }
+        return { ok: false, error: { code: 'E_NO_AUTOSTEP',
+                                     message: `no surface could auto-step on page ${page}` } };
+      });
+    },
+
     // ----- transcript / events -----
     subscribe(filter, cb) { return eventBus.subscribe(filter, cb); },
     transcript(opts)      { return eventBus.transcript(opts); },
