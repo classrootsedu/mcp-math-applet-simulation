@@ -91,15 +91,20 @@
       }
       this._emitPageChanged(1, 2);
 
-      // Surface the start as a student-sourced action so the parent AI tutor
-      // can react to "the student has begun" (Issue #7). The page.changed
-      // event above is source:'ai' and is filtered out by the parent bridge
-      // (which only subscribes to source:'student' action.completed/rejected).
+      // Source attribution: when the student clicked Mulai, the dispatcher
+      // routes here with action.kind === 'ui' (see this.dispatch). When the
+      // AI tutor invokes the `start` tool — e.g. via the idle-timeout
+      // auto-action that the React parent forwards over postMessage — there
+      // is NO kind:'ui'. We must label the emit accordingly so the parent
+      // bridge (which filters to source:'student') does not relay AI-driven
+      // starts back to MAX as a "student just clicked" turn, which would
+      // create a feedback loop.
+      const sourceSig = (action && action.kind === 'ui') ? 'student' : 'ai';
       try {
         if (global.AppAPI && typeof global.AppAPI._emit === 'function') {
           global.AppAPI._emit({
             type: 'action.completed',
-            source: 'student',
+            source: sourceSig,
             payload: {
               name: 'start',
               stepBefore,
