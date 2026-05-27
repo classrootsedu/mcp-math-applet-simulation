@@ -42,6 +42,24 @@
 
     checkGoal() { return this._subs[0].checkGoal(); }
 
+    // AI idle auto-step. This composite is the only surface registered for
+    // page 2 (see PageConfig.js), so AppAPI.aiAutoStep iterates just this one —
+    // without delegating, it finds no autoStep here and returns E_NO_AUTOSTEP,
+    // leaving the guided long-division grid frozen on every idle turn. Mirror
+    // the dispatch/checkGoal delegation: run the first sub-surface that can
+    // perform its next step (ok !== false), same selection AppAPI applies
+    // across surfaces, scoped to this page's sub-surfaces.
+    autoStep() {
+      for (const s of this._subs) {
+        if (typeof s.autoStep !== 'function') continue;
+        const r = s.autoStep();
+        if (r && r.ok !== false) return r;
+      }
+      return { ok: false,
+               error: { code: 'E_NO_AUTOSTEP',
+                        message: 'page2-surface: no sub-surface could auto-step' } };
+    }
+
     dispatch(action) {
       // semantic: find sub-surface that owns this name
       if (action.kind === 'semantic') {
