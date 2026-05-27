@@ -5,6 +5,35 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Math Learning Applet</title>
     <script>
+        // ?debug=1 turns on noisy render/CSS-conversion/component-lifecycle
+        // logs throughout the applet. Off by default so a single click no
+        // longer produces ~5000 console lines (Issue #9). The AI-bridge logs
+        // (🔗 [AI bridge] emitted action.*) and warnings/errors stay on
+        // unconditionally regardless of this flag.
+        try {
+            window.AI_DEBUG = new URLSearchParams(window.location.search).has('debug');
+        } catch (e) { window.AI_DEBUG = false; }
+
+        // Gate noisy console.log calls without touching every file. Matches
+        // the emoji/text prefixes used by the high-volume render-debug logs:
+        //   🔍  createCustomElement, NextButton, TeacherNote, [LongDivisionGrid]…
+        //   🎯  [CSS Conversion] (gridpositions.js)
+        //   🚀  Starting app on page X
+        //   "  - "  continuation lines emitted under 🎯 (separate console.log)
+        // Bridge logs (🔗), sound diagnostics (🔊), and success markers (✅)
+        // are intentionally NOT in the regex so they pass through unchanged.
+        // console.warn / console.error are untouched.
+        (function gateNoisyLogs() {
+            var NOISE_RE = /^(🔍|🎯|🚀|\s+-\s)/;
+            var originalLog = console.log.bind(console);
+            console.log = function () {
+                if (window.AI_DEBUG) return originalLog.apply(null, arguments);
+                var first = arguments[0];
+                if (typeof first === 'string' && NOISE_RE.test(first)) return;
+                originalLog.apply(null, arguments);
+            };
+        })();
+
         // Set dynamic title based on language
         document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {

@@ -90,6 +90,30 @@
         global.changePageAndNotify(2);
       }
       this._emitPageChanged(1, 2);
+
+      // Surface the start as a student-sourced action so the parent AI tutor
+      // can react to "the student has begun" (Issue #7). The page.changed
+      // event above is source:'ai' and is filtered out by the parent bridge
+      // (which only subscribes to source:'student' action.completed/rejected).
+      try {
+        if (global.AppAPI && typeof global.AppAPI._emit === 'function') {
+          global.AppAPI._emit({
+            type: 'action.completed',
+            source: 'student',
+            payload: {
+              name: 'start',
+              stepBefore,
+              stepAfter: 'selectStartingDigit', // page 2's first step
+              validation: { correct: true },
+            },
+          });
+        }
+      } catch (e) {
+        // Non-fatal — the surface still returned ok.
+        // eslint-disable-next-line no-console
+        console.warn('🔗 [AI bridge] page1 _start emit failed', e);
+      }
+
       return {
         ok: true,
         actionId: action.actionId,

@@ -1137,28 +1137,61 @@
       }
       lockInteraction();
       setSelectDigitError(null);
-      
-      setSelectedStartingDigits(prev => {
-        const newSelection = [...prev];
-        const index = newSelection.indexOf(digitIndex);
-        
-        if (index === -1) {
-          // Add digit if it's sequential (can only add next digit)
-          if (newSelection.length === 0 || digitIndex === Math.max(...newSelection) + 1) {
-            newSelection.push(digitIndex);
-            newSelection.sort((a, b) => a - b);
-          }
-        } else {
-          // Remove digit and all subsequent digits
-          newSelection.splice(index);
+
+      // Compute the new selection from the current closure value so we can
+      // both update React state AND emit a student-sourced event with the
+      // accurate selectedDigits list (Issue #7). The closure value is
+      // current because selectedStartingDigits is in this callback's deps.
+      const prev = selectedStartingDigits;
+      const newSelection = [...prev];
+      const index = newSelection.indexOf(digitIndex);
+
+      if (index === -1) {
+        // Add digit if it's sequential (can only add next digit)
+        if (newSelection.length === 0 || digitIndex === Math.max(...newSelection) + 1) {
+          newSelection.push(digitIndex);
+          newSelection.sort((a, b) => a - b);
         }
-        
-        return newSelection;
-      });
-      
+      } else {
+        // Remove digit and all subsequent digits
+        newSelection.splice(index);
+      }
+
+      setSelectedStartingDigits(newSelection);
+
+      // Surface the dividend-digit selection so MAX can react ("good, now
+      // how many 3s fit in 9?"). Without this emit, MAX is blind to setup
+      // moves and can only see graded quotient/subtract digits. We re-use
+      // action.completed (the parent bridge's allowlist) with a clear name.
+      try {
+        if (window.AppAPI && typeof window.AppAPI._emit === 'function') {
+          const dividendValue = newSelection.reduce(
+            (acc, i) => acc * 10 + data.dividendDigits[i],
+            0
+          );
+          window.AppAPI._emit({
+            type: 'action.completed',
+            source: 'student',
+            payload: {
+              name: 'selectStartingDigit',
+              digitIndex,
+              selectedDigits: newSelection,
+              dividendValue,
+              divisor,
+              cellKey: 'select-starting-digits',
+              validation: { correct: true },
+            },
+          });
+        }
+      } catch (e) {
+        // Non-fatal — the React state update above already succeeded.
+        // eslint-disable-next-line no-console
+        console.warn('🔗 [AI bridge] selectStartingDigit emit failed', e);
+      }
+
       // Note: Lock will be released by the auto-advance effect or after a timeout
       // if no auto-advance occurs (e.g., when value is still less than divisor)
-    }, [lockInteraction, checkInteractionLocked]);
+    }, [lockInteraction, checkInteractionLocked, selectedStartingDigits, data.dividendDigits, divisor]);
     
     
     const generateGuidedSteps = React.useCallback(() => {
@@ -4073,7 +4106,12 @@
       const key = currentStep.cellKey;
       setGuidedValues(prev => ({ ...prev, [key]: digit }));
       if (digit === currentStep.correctValue || Number(digit) === Number(currentStep.correctValue)) {
-              if (typeof window !== 'undefined' && window.playAnswerSound) window.playAnswerSound(true);
+              // skipEmit: handleGuidedDigitClick emits a richer action.completed
+              // right after applyGuidedDigit returns (with step name, digit,
+              // expected, actual). Without skipEmit we'd double-fire and the
+              // parent bridge's payload-aware dedupe would have to discard one
+              // — keep the minimal sound-manager emit out of this path.
+              if (typeof window !== 'undefined' && window.playAnswerSound) window.playAnswerSound(true, { skipEmit: true });
               console.log('🔍 [LongDivisionGrid] DROP CORRECT: key =', key, 'digit =', digit, 'currentStep.type =', currentStep.type, 'currentStep.correctValue =', currentStep.correctValue);
               setGuidedValidation(prev => ({ ...prev, [key]: { isCorrect: true } }));
               
@@ -4263,7 +4301,10 @@
                 }
               }
             } else {
-              if (typeof window !== 'undefined' && window.playAnswerSound) window.playAnswerSound(false);
+              // skipEmit: handleGuidedDigitClick emits a richer action.rejected
+              // right after applyGuidedDigit returns (see ~line 4452). Keep the
+              // minimal sound-manager emit out of this path to avoid double-fire.
+              if (typeof window !== 'undefined' && window.playAnswerSound) window.playAnswerSound(false, { skipEmit: true });
               // Incorrect drop - add to cell, show salmon background, wiggle, then clear
               setGuidedValidation(prev => ({ ...prev, [key]: { isCorrect: false } }));
               

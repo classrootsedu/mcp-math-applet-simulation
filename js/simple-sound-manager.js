@@ -111,16 +111,25 @@ const SimpleSoundManager = (() => {
   };
 
   // Specific sound functions
-  const playAnswerSound = (isCorrect) => {
+  //
+  // Callers that emit their OWN richer event (e.g. long-division-grid's
+  // handleGuidedDigitClick — which includes digit/step/expected) should pass
+  // { skipEmit: true } so we don't double-fire the same logical action.
+  // Without this, the parent bridge sees two ai.events ~10ms apart and the
+  // 50ms payload-aware dedupe upstream picks one — usually the minimal one
+  // from here, dropping the rich payload (Issue #5/#6).
+  const playAnswerSound = (isCorrect, options = {}) => {
+    const { skipEmit = false } = options;
     playSound(isCorrect ? 'correct' : 'wrong', { volume: 0.7 });
-    emitAnswerEvent(isCorrect);
+    if (!skipEmit) emitAnswerEvent(isCorrect);
   };
 
-  const playCarClickSound = (soundType) => {
+  const playCarClickSound = (soundType, options = {}) => {
+    const { skipEmit = false } = options;
     // Support both car click sounds and answer sounds (correct/wrong)
     if (soundType === 'correct' || soundType === 'wrong') {
       playSound(soundType, { volume: 0.7 });
-      emitAnswerEvent(soundType === 'correct');
+      if (!skipEmit) emitAnswerEvent(soundType === 'correct');
     } else if (soundType === 'next' || soundType === 'previous') {
       playSound('click', { volume: 0.8, carNumber: soundType });
     } else {
