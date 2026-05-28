@@ -125,6 +125,46 @@
     autoStep() {
       const h = handle();
       if (!h) return { ok: false, error: { code: 'E_NOT_INTERACTABLE', message: 'long-division grid not mounted' } };
+
+      // ── Completion handling (must come FIRST) ────────────────────────────
+      // The guided step index does NOT always tick to 'complete' once the
+      // division is solved — for a remainder-0 problem (e.g. 96÷3=32) it sits
+      // on the final 'writeSubtractionResult' step and the grid never sets
+      // __longDivisionComplete. If we relied on currentStep we'd re-fill that
+      // last cell forever (the loop the user saw) and never press ».
+      //
+      // Use the VALUE-BASED checkGoal() instead — it compares the filled
+      // quotient/remainder against the target, so it's true the moment the
+      // division is actually solved regardless of the step index or remainder.
+      let solved = false;
+      try { solved = !!(this.checkGoal() || {}).reached; } catch (e) { solved = false; }
+      if (typeof global !== 'undefined' && global.__longDivisionComplete === true) solved = true;
+
+      if (solved) {
+        const qList = global.question || [];
+        const qIdx  = global.currentQuestionIndex || 0;
+        const isLast = qList.length > 0 && qIdx >= qList.length - 1;
+        if (isLast) {
+          // Whole activity done. Make __longDivisionComplete authoritative so
+          // AppAPI.checkSessionGoal() reaches true (it requires the flag AND
+          // last question) — the host reads that and ADVANCEs the lesson.
+          global.__longDivisionComplete = true;
+          return { ok: false, error: { code: 'E_SESSION_COMPLETE', message: 'all questions solved' },
+                   sessionComplete: true };
+        }
+        // More questions remain — press » (mirror nav-surface page-2 logic):
+        // reset completion/hint state and advance to the next question.
+        if (global.PageCompletionManager && typeof global.PageCompletionManager.setPageCompleted === 'function') {
+          global.PageCompletionManager.setPageCompleted(2, false);
+        }
+        if (global.__longDivisionComplete !== undefined) delete global.__longDivisionComplete;
+        if (global.__longDivisionGuidedHint !== undefined) delete global.__longDivisionGuidedHint;
+        global.currentQuestionIndex = qIdx + 1;
+        if (typeof global.changePageAndNotify === 'function') global.changePageAndNotify(2);
+        return { ok: true, page: 2, autoStepped: true, advancedQuestion: true,
+                 stepBefore: 'complete', stepAfter: 'nextQuestion', validation: { correct: true } };
+      }
+
       const step = currentStep();
       if (step === 'complete' || step === 'unknown') {
         return { ok: false, error: { code: 'E_DONE', message: 'no pending step' } };

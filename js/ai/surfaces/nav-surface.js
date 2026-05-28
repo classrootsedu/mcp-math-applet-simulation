@@ -36,6 +36,36 @@
                currentHint: null, uiElementValues: {} };
     }
 
+    // AI idle auto-step: advance to the NEXT question by pressing » — but ONLY
+    // when the current page-2 division is actually complete and there are more
+    // questions left. This is what unblocks the loop where the division is
+    // finished but aiAutoStep had nothing to do (the long-division surface
+    // returns ok:false on a complete board, so aiAutoStep falls through to
+    // here). We never click » mid-division, and never on the last question
+    // (that would wrap back to page 1) — the whole-session-complete case is
+    // handled lesson-side via check_session_goal → [ADVANCE].
+    autoStep() {
+      if (this._page !== 2) {
+        return { ok: false, error: { code: 'E_NO_AUTOSTEP', message: 'nav autostep only on page 2' } };
+      }
+      const divisionDone = (typeof global !== 'undefined') && global.__longDivisionComplete === true;
+      if (!divisionDone) {
+        return { ok: false, error: { code: 'E_NOT_DONE', message: 'division not complete — not navigating' } };
+      }
+      const qList = global.question || [];
+      const idx   = global.currentQuestionIndex || 0;
+      const isLast = qList.length > 0 && idx >= qList.length - 1;
+      if (isLast) {
+        // Whole session done — do NOT press » (it would wrap to page 1).
+        // The lesson advances via check_session_goal on the backend.
+        return { ok: false, error: { code: 'E_SESSION_COMPLETE', message: 'all questions complete' },
+                 sessionComplete: true };
+      }
+      const r = this._next({ name: 'clickNext', actionId: 'autostep-' + Date.now(), kind: 'semantic' });
+      return Object.assign({ autoStepped: true, advancedQuestion: true,
+                             stepAfter: 'nextQuestion' }, r);
+    }
+
     checkGoal() { return { reached: false, actual: {} }; }
 
     dispatch(action) {
