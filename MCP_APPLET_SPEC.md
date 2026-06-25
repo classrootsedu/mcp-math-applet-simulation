@@ -3,50 +3,57 @@
 Every new AI-tutor-compatible applet must follow this spec.  
 Copy this document into `mcp/MCP_APPLET_SPEC.md` in any new applet repo.
 
+This document is **topic-agnostic**. Examples use neutral names (`submitAnswer`, `selectOption`);  
+map your applet's native actions into the same contract.
+
 ---
 
 ## Overview
 
-An MCP-compatible applet exposes itself to the AI tutor via protocol layers:
+An MCP-compatible applet exposes itself to the AI tutor through layered protocol shells.  
+The applet's own state machine (React reducer, AppletMCP bus) **stays unchanged** — only thin adapters are added on top.
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│  AI Tutor Backend  (mcp_simulation_graph.py)               │
-│       ↕  HTTP SSE                                          │
-│  mcp-applet-server.js   — Node.js, Playwright, MCP SDK     │
-│       ↕  page.evaluate  → window.AppAPI                    │
-│  js/ai/app-api.js       — thin adapter, applet-specific    │
-│       ↕  postMessage                                       │
-│  js/ai/bridge.js        — verbatim copy, zero edits        │
-│       ↕  postMessage                                       │
-│  SimulationContent.jsx  (host FE, iframe parent)           │
-└────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  AI Tutor Backend  (mcp_simulation_graph.py)                            │
+│       ↕  HTTP SSE  (MCP tools: describe_page, domain actions, …)        │
+│  mcp-applet-server.js   — Node.js, Playwright, MCP SDK                  │
+│       ↕  page.evaluate  → window.AppAPI   (bypasses bridge)             │
+├─────────────────────────────────────────────────────────────────────────┤
+│  js/ai/app-api.js       — per-applet adapter over AppletMCP            │
+│       ↕  translates bus events + attaches event.tutor dialogue           │
+│  js/ai/bridge.js        — verbatim copy, zero edits                       │
+│       ↕  postMessage  (ai.handshake | ai.call | ai.subscribe | …)      │
+│  SimulationContent.jsx  (host FE, iframe parent)                        │
+│       ↕  onStudentInteraction → MAX /chat                               │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-The applet's own state machine (React reducer, AppletMCP bus) **stays unchanged**.  
-The four layers above sit on top as a thin production protocol shell.
+### Two integration paths (both valid)
+
+| Path | Who drives the applet | Who hears events |
+|---|---|---|
+| **Production host** | `SimulationContent` sends `ai.call` via postMessage | Host subscribes via `ai.subscribe` → receives `ai.event` with `event.tutor` |
+| **MCP server / agent** | Playwright calls `window.AppAPI` directly | MCP server does **not** auto-subscribe to `ai.event` unless you add that |
+
+Standalone browser testing (`localhost` + DevTools) has **no host** — you must manually send handshake + subscribe (see §12).
 
 ---
 
 ## Deliverables A–F Reference (Full Applet Stack)
 
-This spec is not only about the bridge/protocol shell. A production-ready MCP applet
-has six reusable deliverables from `docs/applet-mcp-bridge-blueprint.md`.
+A production-ready MCP applet has six reusable deliverables (see `docs/applet-mcp-bridge-blueprint.md`).
 
 | Deliverable | Scope | Reuse level | Required |
 |---|---|---|---|
-| **A — Bridge core** | `AppletMCP` core bus + registry (`listInstances`, `getProps`, `invoke`, `subscribe`, `emit`) | Reuse verbatim | Yes |
+| **A — Bridge core** | `AppletMCP` bus + registry (`listInstances`, `getProps`, `invoke`, `subscribe`, `emit`) | Reuse verbatim | Yes |
 | **B — Registration layer** | `useMcpRegistry` / `withMcp` hooks that register component instances | Reuse verbatim | Yes |
-| **C — Component integration** | Per-component integration: methods, `getProps`, event emits, overrides | Author per applet | Yes |
-| **D — Catalog** | `getCatalog()` metadata + examples for agent composition | Author per applet | Strongly recommended |
-| **E — Scratchpad/Compose** | `createElement`, `listScratchpad`, `clearScratchpad`, compose page | Light per-applet wiring | Optional (recommended for tooling) |
-| **F — Dialogue layer** | `public/dialogues.js` + `getDialogue()` reader + event-to-dialogue mapping | Schema reused, content authored per locale | Yes for tutor-guided applets |
+| **C — Component integration** | Per-component: methods, `getProps`, domain event emits | Author per applet | Yes |
+| **D — Catalog** | `getCatalog()` metadata + valid compose examples | Author per applet | Strongly recommended |
+| **E — Scratchpad/Compose** | `createElement`, `listScratchpad`, `clearScratchpad`, compose page | Light wiring | Optional |
+| **F — Dialogue layer** | `public/dialogues.js` + `getDialogue()` + event→dialogue resolver | Schema reused, content per locale | Yes for tutor-guided applets |
 
-### Deliverables vs protocol shell
-
-- Deliverables **A–F** power in-applet control, composition, and dialogue content.
-- The **protocol shell** (`APP_CONFIG`, `app-api.js`, `bridge.js`, `mcp-applet-server.js`) exposes those capabilities to host/backend.
-- Fleet consistency requires both parts. Do not ship only bridge files.
+**Fleet rule:** ship Deliverables **A–F** (or E explicitly disabled) **and** the protocol shell. Do not ship only `bridge.js` + `app-api.js`.
 
 ---
 
@@ -54,64 +61,71 @@ has six reusable deliverables from `docs/applet-mcp-bridge-blueprint.md`.
 
 | File | Origin | Notes |
 |---|---|---|
-| `window.APP_CONFIG` block in `index.html` | Author once | 5 lines |
-| `js/applet-mcp.js` | Copy from blueprint | Deliverables A+B core/hook layer |
-| `js/applet-catalog.js` | Author per-applet | Deliverable D catalog metadata |
-| `public/dialogues.js` | Author per-applet + locale | Deliverable F dialogue content |
-| `js/ai/bridge.js` | **Copy verbatim** from any prior applet | Zero edits — transport-agnostic |
-| `js/ai/app-api.js` | Author per-applet | Adapter over `window.AppletMCP` |
-| `mcp/mcp-applet-server.js` | Author per-applet | Structural copy, new tool names |
+| `window.APP_CONFIG` in every locale entry HTML | Author once per entry | See §1 |
+| `js/applet-mcp.js` | Copy from blueprint | Deliverables A+B |
+| `js/applet-catalog.js` | Author per applet | Deliverable D |
+| `public/dialogues.js` | Author per applet + locale | Deliverable F |
+| `js/ai/bridge.js` | **Copy verbatim** from any prior applet | Zero edits |
+| `js/ai/app-api.js` | Author per applet | Adapter over `AppletMCP` |
+| `mcp/mcp-applet-server.js` | Author per applet | Structural copy + domain tools |
 | `mcp/package.json` | Copy from prior applet | Same deps |
 
 ---
 
-## 1. APP_CONFIG — Required in index.html
+## 1. APP_CONFIG — Required in every entry HTML
 
-Add this block **before any AI scripts** load:
+Add **before** `applet-mcp.js` and AI scripts in **each** learner-facing entry file  
+(e.g. `index.html`, `index-en.html`, or any locale-specific entry):
 
 ```html
 <script>
   window.APP_CONFIG = {
     AI_ENABLED: /[?&]ai=1\b/.test(location.search),
     AI_ALLOWED_ORIGINS: ['*'],        // tighten in production
-    appId:   'YOUR_APPLET_ID',        // e.g. 'G8C6M2A3'
+    appId:   'YOUR_APPLET_ID',
     version: '1.0.0',
   };
 </script>
 ```
 
-`bridge.js` reads `APP_CONFIG.AI_ALLOWED_ORIGINS` for origin validation.  
-`AI_ENABLED` gates any AI-only initialisation; the host always loads the applet with `?ai=1`.
+| Field | Used by |
+|---|---|
+| `AI_ALLOWED_ORIGINS` | `bridge.js` origin check on handshake / call |
+| `AI_ENABLED` | Optional applet-specific flags (e.g. skip dev-only UI). **Does not** disable `bridge.js` — the listener is always installed |
+| `appId`, `version` | Session metadata in `ai.handshake.ack` |
+
+The production host loads applets with `?ai=1`. Use the same flag in local MCP testing.
 
 ---
 
 ## 2. bridge.js — Verbatim Copy
 
-`bridge.js` handles the postMessage protocol. **Copy it unchanged** — it is 100% applet-agnostic.  
-It only calls `window.AppAPI[method](params)` and forwards events. No applet-specific logic lives here.
+`bridge.js` is the **postMessage transport**. Copy unchanged — no applet logic.
 
-### Messages it handles (inbound from host)
+### Inbound (host → applet)
 
-| Message type | What it does |
+| Message | Action |
 |---|---|
-| `ai.handshake` | Opens a session, replies `ai.handshake.ack` with schema |
-| `ai.call` | Routes to `window.AppAPI[method](params)`, replies `ai.response` |
-| `ai.subscribe` | Calls `AppAPI.subscribe(filter, cb)`, fans events as `ai.event` |
-| `ai.unsubscribe` | Tears down a subscription |
+| `ai.handshake` | Open session, reply `ai.handshake.ack` with schema from `describePage()` |
+| `ai.call` | Route to `AppAPI[method](params)`, reply `ai.response` |
+| `ai.subscribe` | `AppAPI.subscribe(filter, cb)`, fan out `ai.event` |
+| `ai.unsubscribe` | Tear down subscription |
 
-### Messages it sends (outbound to host)
+### Outbound (applet → host)
 
-| Message type | Trigger |
+| Message | When |
 |---|---|
-| `ai.handshake.ack` | Response to handshake |
-| `ai.response` | Response to any `ai.call` |
-| `ai.event` | Each subscribed AppAPI event |
+| `ai.handshake.ack` | Handshake result |
+| `ai.response` | Any `ai.call` result |
+| `ai.event` | Each event matching the subscriber's `filter` |
+
+**Session gate:** `ai.call` and `ai.subscribe` require a prior successful handshake.
 
 ---
 
 ## 3. window.AppAPI — Interface Contract
 
-Every applet's `app-api.js` **must** expose `window.AppAPI` with these methods:
+Every `app-api.js` **must** expose `window.AppAPI`:
 
 ### Core introspection
 
@@ -124,85 +138,87 @@ AppAPI.checkSessionGoal()   → { reached: bool, questionIndex: number, totalQue
 ### Auto-step (idle intervention)
 
 ```js
-AppAPI.aiAutoStep()   → { ok: bool, stepPerformed: string, result: any }
+AppAPI.aiAutoStep()   → { ok: bool, stepPerformed: string, result?: any, error?: {...} }
 ```
 
-Reads the current state, performs the **single next correct guided step**, and returns what was done.  
-Must emit `source: 'ai'` on the event bus so `bridge.js` does **not** echo it as a student turn.
+Performs the **single next correct guided step** for the current state.
 
-### Subscription (event streaming)
+**Critical:** auto-steps must **not** loop back as student turns. Implement one of:
+
+1. Emit events with `source: 'ai'` (preferred), or
+2. Route auto-actions through internal APIs that suppress student event translation.
+
+The host (`SimulationContent`) ignores `source === 'ai'` when forwarding to MAX.
+
+### Subscription
 
 ```js
 AppAPI.subscribe(filter, cb)   → unsubscribe()
-AppAPI.transcript(opts)        → Event[]
-AppAPI._emit(event)            → void
+AppAPI.transcript(opts)        → Event[]     // ring buffer — stub `[]` OK for v1
+AppAPI._emit(event)            → void        // for bridge-internal / test hooks
 ```
+
+`filter` is optional. Supported keys: `{ source, type }`.  
+Omit filter or pass `{}` to receive all event types including `inactivity`.
 
 ### Actions
 
 ```js
-AppAPI.actions.*     // semantic actions: start, plotPoint, reveal, reset, showHint, etc.
-AppAPI.admin.*       // admin actions: reset, navigate
+AppAPI.actions.*     // semantic learner-facing actions (start, submitAnswer, showHint, …)
+AppAPI.admin.*       // reset, navigate, setQuestionIndex, …
 ```
 
 ---
 
-## 3A. Scale Contract (Boilerplate for 1000+ Applets)
+## 3A. Scale Contract (Fleet Boilerplate)
 
-When you maintain many applets across chapters, avoid per-applet naming drift.
-Use this canonical contract and map topic-specific internals into it.
+Use canonical names across applets; map topic-specific internals in `app-api.js`.
 
-### Required common lifecycle actions (topic-agnostic)
+### Required lifecycle actions (every applet)
 
-Expose these in `AppAPI.actions` for **every** applet:
+| Action | Purpose |
+|---|---|
+| `start` | Begin from intro / ready state |
+| `stop` | End run safely |
+| `pause` | Pause timers / input evaluation |
+| `resume` | Resume after pause |
+| `reset` | Return to clean initial state |
+| `showHint` | Show learner-visible hint text |
+| `clearHint` | Remove hint UI |
 
-| Action | Purpose | Return shape |
-|---|---|---|
-| `start` | Begin activity/session from intro/ready state | `{ ok, result? \| error? }` |
-| `stop` | Stop current run safely (no state corruption) | `{ ok, result? \| error? }` |
-| `pause` | Temporarily pause timers/animations/input evaluation | `{ ok, result? \| error? }` |
-| `resume` | Continue after pause | `{ ok, result? \| error? }` |
-| `reset` | Reset to clean initial state | `{ ok, result? \| error? }` |
-| `showHint` | Render learner-visible hint text | `{ ok, result? \| error? }` |
-| `clearHint` | Remove hint UI | `{ ok, result? \| error? }` |
-
-If an applet does not support a lifecycle action natively, still expose it and return:
+Unsupported actions **must still exist** and return:
 
 ```js
 { ok: false, error: { code: 'E_UNSUPPORTED_ACTION', message: 'pause not supported' } }
 ```
 
-This keeps orchestration code stable across all applets.
-
-### Canonical state stages (normalize per applet)
-
-Standardize applet-specific state into these stages where possible:
-
-`intro | active | paused | review | completed | stopped | error`
-
-Topic-specific stages (for example `plot`, `join`, `extend`) are allowed, but include:
-- canonical stage in `uiElementValues.lifecycleStage`
-- native stage in `uiElementValues.stage`
-
 ### Canonical action result envelope
 
-All `AppAPI.actions.*` and `AppAPI.admin.*` methods should return one of:
-
 ```js
-{ ok: true, result: any }
+{ ok: true,  result: any }
 { ok: false, error: { code: string, message: string, details?: any } }
 ```
 
-`callApi` and MCP tools depend on this stability.
+MCP `callApi` and orchestration code depend on this shape.
 
-### Backward-compatible aliases
+### Canonical vs native stage (recommended)
 
-You may keep applet-native names (`plotPoint`, `tapLine`, `submitAnswer`) but expose canonical aliases too:
-- `submit` for answer submission
-- `next` / `previous` for step navigation
-- `check` for explicit validation
+| Field | Purpose |
+|---|---|
+| `uiElementValues.stage` | Applet-native stage name (any string) |
+| `uiElementValues.lifecycleStage` | Normalized: `intro \| active \| paused \| review \| completed \| stopped \| error` |
 
-Do not remove existing names used by older lessons; add aliases instead.
+Include `lifecycleStage` when the applet has non-trivial lifecycle; omit only for trivial single-screen applets.
+
+### Domain action aliases (additive only)
+
+Keep applet-native names for backward compatibility. Add canonical aliases where useful:
+
+| Canonical | Typical native names |
+|---|---|
+| `submit` | `submitAnswer`, `applyDigit`, `confirm` |
+| `next` / `previous` | step navigation actions |
+| `check` | explicit validation without advancing |
 
 ### PageDescription shape
 
@@ -211,116 +227,151 @@ Do not remove existing names used by older lessons; add aliases instead.
   page: number,
   stateBySurface: {
     '<surface-id>': {
-      currentStep:     string,         // human-readable stage name
-      expectedActions: string[],       // what the student should do next
-      uiElementValues: { ... }         // surface-specific state snapshot
+      currentStep:     string,    // human-readable pending step
+      expectedActions: string[],    // controlled vocabulary, e.g. ['submitAnswer']
+      uiElementValues: { ... },     // surface snapshot (stage, targets, inputs, …)
     }
   },
   goal: { kind: string, description: string },
-  semanticActions: [{ name: string, args: { [key]: type } }],
+  semanticActions: [{ name, description, args }],
   questionIndex: number,
 }
 ```
 
 ---
 
-## 4. Standard Events — Every Applet Must Emit
+## 4. Standard Events
 
-Events flow from the applet's internal bus (AppletMCP) **through** `app-api.js` (translated) into the
-`bridge.js` → host (`SimulationContent.jsx`) → backend pipeline.
+```
+Component (Deliverable C)
+  → AppletMCP bus (componentEvent)
+  → app-api.js (translate to standard envelope + attach tutor block)
+  → bridge.js (ai.event to host)
+  → SimulationContent → MAX
+```
 
 ### Event envelope
 
 ```js
 {
-  type:    string,          // see taxonomy below
+  type:    string,
   source:  'student' | 'ai' | 'system',
   page:    number,
-  payload: { ... }          // event-specific
+  payload: { name?: string, validation?: {...}, stage?: string, ... },
+  tutor?:  { completion, feedback, next, learning }   // optional, see below
 }
 ```
 
-`bridge.js` filters by `source` — the host subscribes with `{ source: 'student' }`,  
-so AI-initiated events (`source: 'ai'`) are NOT forwarded to the backend. This prevents feedback loops.
+### Host subscription (production)
 
-### Required event types
+`SimulationContent` handshakes on iframe load and subscribes with:
 
-| Event type | source | When to emit | Payload |
+```js
+filter: {}   // all types — includes inactivity (system) and stage.changed
+```
+
+It **drops** events where `source === 'ai'` to prevent feedback loops when MAX auto-demonstrates a step.
+
+Legacy note: subscribing only `{ source: 'student' }` **hides** `inactivity` and other system events.
+
+### Required event types (minimum set)
+
+| Event type | source | When | Payload (minimum) |
 |---|---|---|---|
-| `action.completed` | `student` | Any correct student action | `{ name, validation: { correct: true, actual: {...} } }` |
-| `action.rejected` | `student` | Any wrong/invalid student action | `{ name, validation: { correct: false, actual: {...} } }` |
-| `stage.changed` | `student` | Activity stage transition | `{ stage: string, prevStage: string }` |
-| `lifecycle.changed` | `system` | Lifecycle state changed (`active/paused/stopped/...`) | `{ state: string, prevState: string }` |
-| `inactivity` | `system` | Idle threshold exceeded | `{ stage, expectedAction }` |
-| `activity.completed` | `student` | All goals reached | `{ score, solved, total }` |
-| `bridge.handshake` | `system` | AI tutor connected | `{ caller, capabilities }` — emitted by bridge.js |
+| `action.completed` | `student` | Correct learner action | `{ name, validation: { correct: true, actual } }` |
+| `action.rejected` | `student` | Wrong / invalid action | `{ name, validation: { correct: false, actual } }` |
+| `stage.changed` | `student` | Activity stage transition | `{ stage, prevStage }` |
+| `inactivity` | `system` | Idle threshold while input expected | `{ stage, expectedAction }` |
+| `activity.completed` | `student` | All session goals met | `{ score, solved, total }` |
+| `bridge.handshake` | `system` | Host connected | `{ caller, capabilities }` — from `bridge.js` |
 
-### Event → Dialogue mapping
+### Recommended (implement when lifecycle is supported)
 
-Each event triggers a dialogue lookup in the backend. The key convention is:
+| Event type | source | When |
+|---|---|---|
+| `lifecycle.changed` | `system` | `active` ↔ `paused` ↔ `stopped` transitions |
+
+### Event → dialogue (`event.tutor`)
+
+**Primary resolver: `app-api.js`** (Deliverable F wiring).
+
+On each translated event, `app-api.js` looks up `public/dialogues.js` and attaches:
+
+```js
+event.tutor = {
+  completion: string | null,   // praise / what just happened
+  feedback:   string | null,   // wrong-action correction
+  next:       string | null,   // what to do next
+  learning:   string | null,   // optional concept line
+}
+```
+
+Mapping convention (per page / locale in `dialogues.js`):
 
 ```
-inactivity          →  dialogue.inactivity.<stage>   (or default)
-action.rejected     →  dialogue.error.<actionName>
-stage.changed       →  dialogue.stage.<stage>
-activity.completed  →  dialogue.complete
+action.completed    →  events.<domainEvent> or actions.<actionName>
+action.rejected     →  events.wrong<Action> or actions.<actionName>.error
+stage.changed       →  events.entered<Stage>
+inactivity          →  inactivity.<stage> ?? inactivity.default
+activity.completed  →  events.activityComplete
 ```
 
-The backend (`mcp_simulation_graph.py`) handles dialogue selection — the applet just emits raw events.
+The host prefers `event.tutor` text when forwarding to MAX.  
+A **backend mirror** in `mcp_simulation_graph.py` is optional (useful when events arrive without `tutor` blocks).
 
-### Event quality rules (for fleet reliability)
+### Event quality rules
 
-- Emit one semantic event per learner action (avoid duplicate minimal + rich events).
-- Include stable `payload.name` values from a controlled vocabulary.
-- Always include `page` and `source`.
-- Never emit PII in payloads.
-- Prefer additive payload evolution; do not rename/remove existing keys.
+- One semantic event per learner action (no duplicate minimal + rich emits for the same tap).
+- Stable `payload.name` from a controlled vocabulary per applet.
+- Always set `page` and `source`.
+- No PII in payloads.
+- Evolve payloads additively; do not rename keys used by live lessons.
 
 ---
 
-## 5. sim:progress and sim:complete — Progress Reporting
+## 5. sim:progress and sim:complete — Host Progress Signals
 
-The host (`SimulationContent.jsx`) listens for these `window.parent.postMessage` calls
-to track progress and mark the lesson step as done.
+Separate from `ai.event` — these are direct `window.parent.postMessage` calls the lesson host listens for.
 
-### sim:progress — emit on each correct step
+### sim:progress — after each meaningful correct step
 
 ```js
 if (window.parent !== window) {
   window.parent.postMessage({
     type:  'sim:progress',
-    step:  n,      // steps completed so far (1-based)
-    total: M,      // total steps in session
+    step:  n,      // steps completed (1-based)
+    total: M,
   }, '*');
 }
 ```
 
-### sim:complete — emit when all goals are met
+### sim:complete — when all goals are met
 
 ```js
 if (window.parent !== window) {
   window.parent.postMessage({
     type:   'sim:complete',
-    solved: N,     // number of goals solved
-    total:  N,     // total goals
-    score:  100,   // score 0–100
+    solved: N,
+    total:  N,
+    score:  100,   // 0–100
   }, '*');
 }
 ```
 
-**Where to add these:** In the same `useEffect` that fires AppletMCP domain events.  
-Always guard with `window.parent !== window` so standalone testing doesn't throw.
+Emit from the same effects that fire AppletMCP domain events.  
+The `window.parent !== window` guard keeps standalone HTTP testing safe.
 
 ---
 
 ## 6. MCP SSE Server Pattern
 
-`mcp/mcp-applet-server.js` is a Node.js server that:
-1. Launches Playwright (headless), navigates to `APPLET_URL?ai=1`
-2. Waits for `window.AppAPI` to exist
-3. Exposes AppAPI methods as MCP tools over HTTP SSE (`PORT` env var)
+`mcp/mcp-applet-server.js`:
 
-### callApi helper — always the same
+1. Launches Playwright, navigates to `APPLET_URL` (include `?ai=1`)
+2. Waits for `window.AppAPI`
+3. Exposes AppAPI methods as MCP tools over HTTP SSE (`PORT`) or stdio
+
+### callApi helper (copy unchanged)
 
 ```js
 async function callApi(path, args = {}) {
@@ -340,144 +391,234 @@ async function callApi(path, args = {}) {
 }
 ```
 
-### Standard tools every server must expose
+### Standard tools (identical fleet-wide)
 
-| Tool name | AppAPI path | Args |
-|---|---|---|
-| `describe_page` | `describePage` | — |
-| `snapshot` | `snapshot` | — |
-| `check_session_goal` | `checkSessionGoal` | — |
-| `ai_auto_step` | `aiAutoStep` | — |
-| `start` | `actions.start` | — |
-| `stop` | `actions.stop` | — |
-| `pause` | `actions.pause` | — |
-| `resume` | `actions.resume` | — |
-| `reset` | `admin.reset` | — |
+| MCP tool | AppAPI path |
+|---|---|
+| `describe_page` | `describePage` |
+| `snapshot` | `snapshot` |
+| `check_session_goal` | `checkSessionGoal` |
+| `ai_auto_step` | `aiAutoStep` |
+| `start` | `actions.start` |
+| `stop` | `actions.stop` |
+| `pause` | `actions.pause` |
+| `resume` | `actions.resume` |
+| `reset` | `admin.reset` |
+| `show_hint` | `actions.showHint` |
+| `clear_hint` | `actions.clearHint` |
 
-Then add **domain-specific action tools** (e.g. `plot_point`, `start`, `reveal`, `tap_line`).
+### Domain-specific tools (author per applet)
 
-### Naming convention for domain tools
+Add snake_case MCP tools mapped to camelCase `AppAPI.actions`:
 
-Use snake_case MCP names and map to camelCase AppAPI actions:
-- `submit_answer` → `actions.submitAnswer`
-- `select_option` → `actions.selectOption`
-- `manipulate_object` → `actions.manipulateObject`
+| Pattern | Example |
+|---|---|
+| `submit_answer` | `actions.submitAnswer` |
+| `select_option` | `actions.selectOption` |
+| `apply_value` | `actions.applyValue` |
+| `tap_target` | `actions.tapTarget` |
 
-Keep generic tool names (`start`, `stop`, `pause`, `resume`, `reset`) identical across all applets.
+Document each tool's valid stages in the MCP `description` field (agents read this every turn).
+
+### Optional MCP tools (platform v2)
+
+| Tool | Purpose |
+|---|---|
+| `get_dialogue` | Fetch authored line by path without performing an action |
+| Tutor blocks on tool **returns** | Attach `{ tutor: { next, … } }` to action tool results for agent-only paths |
 
 ### Environment variables
 
 | Var | Default | Purpose |
 |---|---|---|
-| `PORT` | — | HTTP SSE port (omit for stdio) |
-| `APPLET_URL` | `http://localhost:8080/index.html?ai=1` | Applet URL |
-| `HEADLESS` | `false` | `true` for CI/production |
-| `STARTUP_DELAY_MS` | `500` | Extra wait after AppAPI appears |
+| `PORT` | — | HTTP SSE port; omit for stdio |
+| `APPLET_URL` | `http://localhost:8181/index.html?ai=1` | Served applet URL |
+| `HEADLESS` | `false` | `true` for CI |
+| `STARTUP_DELAY_MS` | `800` | Wait after `AppAPI` appears |
+| `TUTOR_MODE` | `true` | Sets `AppAPI._tutorCapabilityActive` in browser |
 
 ---
 
 ## 7. Script Load Order
 
 ```
-1. libs (react, anime, katex, etc.)
-
-2. <script> window.currentLanguage = "..." </script>
-3. <script> window.APP_CONFIG = { AI_ENABLED: ..., AI_ALLOWED_ORIGINS: [...] } </script>  ← NEW
-
-4. js/applet-mcp.js              ← offline AppletMCP bridge
-5. js/applet-catalog.js
-
-6. public/data.js, public/dialogues.js, etc.
-
-7. [stylesheets]
-
-8. src/components/**             ← all component scripts
-9. src/App.js
-10. src/main.js
-
-11. js/ai/app-api.js             ← NEW — must be AFTER applet-mcp.js
-12. js/ai/bridge.js              ← NEW — must be AFTER app-api.js
+1.  libs (react, …)
+2.  window.currentLanguage
+3.  window.APP_CONFIG
+4.  js/applet-mcp.js
+5.  js/applet-catalog.js
+6.  public/data.js, public/dialogues.js, …
+7.  stylesheets
+8.  src/components/**
+9.  src/App.js, src/main.js
+10. js/ai/app-api.js      ← after applet-mcp.js
+11. js/ai/bridge.js       ← after app-api.js
 ```
 
-If Deliverable E is enabled, also include the scratchpad page/component scripts in the same app script group.
+If Deliverable E is enabled, include scratchpad page scripts in step 8.
 
 ---
 
 ## 8. App.js Requirements
 
 ```js
-// Track current page so AppAPI.describePage() can read it.
+// Synchronous page index for describePage()
 React.useEffect(() => { window.__appCurrentPage = page; }, [page]);
 
-// Expose navigation hook for AppletMCP.navigate().
+// Navigation hook for AppAPI.admin.navigate / aiAutoStep
 window.appletNavigate = (p) => { setPage(Number(p)); return Number(p); };
 ```
+
+Optional: welcome-page `inactivity` timer while waiting on `start` (emit via AppletMCP bus).
 
 ---
 
 ## 9. New Applet Checklist
 
-- [ ] `window.APP_CONFIG` block in `index.html` (and `index-en.html`)
-- [ ] Deliverable A+B present: `js/applet-mcp.js` installed and component registry hooks working
-- [ ] Deliverable C complete for each interactive component (`getProps`, methods, event emits)
-- [ ] Deliverable D present: `js/applet-catalog.js` with valid examples
-- [ ] Deliverable F present: `public/dialogues.js` for all required locales
-- [ ] `js/ai/bridge.js` copied verbatim from prior applet
-- [ ] `js/ai/app-api.js` authored: `describePage`, `checkSessionGoal`, `aiAutoStep`, `subscribe`, `actions.*`
-- [ ] Common lifecycle actions implemented: `start`, `stop`, `pause`, `resume`, `reset`
-- [ ] All activity state changes emit events via AppletMCP bus (translated by app-api.js)
-- [ ] Event taxonomy includes: `action.completed`, `action.rejected`, `stage.changed`, `lifecycle.changed`, `inactivity`, `activity.completed`
-- [ ] `sim:progress` postMessage on each correct step
-- [ ] `sim:complete` postMessage when all goals are met  
-- [ ] `window.__appCurrentPage` updated on page state change in `App.js`
-- [ ] All action methods exposed via `AppAPI.actions.*`
-- [ ] `mcp/mcp-applet-server.js` with domain-specific tools
-- [ ] `mcp/package.json` with npm deps installed
-- [ ] Script load order is correct in `index.html`
-- [ ] Server tested: `PORT=3001 HEADLESS=true APPLET_URL=http://localhost:8XXX/index.html?ai=1 node mcp/mcp-applet-server.js`
+### Required (ship blocker)
 
-### Optional checklist (recommended for platform tooling)
+- [ ] `APP_CONFIG` + full AI script stack in **every** locale entry HTML
+- [ ] Deliverables A+B: `applet-mcp.js`, component registry hooks
+- [ ] Deliverable C: each interactive surface exposes methods, `getProps`, domain emits
+- [ ] Deliverable F: `public/dialogues.js` for each supported locale
+- [ ] `bridge.js` copied verbatim
+- [ ] `app-api.js`: `describePage`, `checkSessionGoal`, `aiAutoStep`, `subscribe`, `actions.*`, `admin.*`
+- [ ] Lifecycle stubs: `start`, `stop`, `pause`, `resume`, `reset`, `showHint`, `clearHint`
+- [ ] Core events translated: `action.completed`, `action.rejected`, `stage.changed`, `inactivity`, `activity.completed`
+- [ ] `event.tutor` attached on subscribe when `tutor` capability granted
+- [ ] `aiAutoStep` does not re-fire as `source: 'student'` events
+- [ ] `sim:progress` / `sim:complete` with `window.parent` guard
+- [ ] `window.__appCurrentPage` + `window.appletNavigate`
+- [ ] `mcp/mcp-applet-server.js` with standard + domain tools
+- [ ] `mcp/package.json` deps installed; server smoke-tested
 
-- [ ] Deliverable E enabled: scratchpad compose APIs (`createElement`, `listScratchpad`, `clearScratchpad`)
-- [ ] `transcript` is implemented (ring buffer), not a stub
-- [ ] `getDialogue(path, lang)` and `getCatalog(mode, name)` both available through `AppletMCP`
+### Strongly recommended
+
+- [ ] Deliverable D: `applet-catalog.js` with copy-paste-valid examples
+- [ ] `uiElementValues.lifecycleStage` normalized in `describePage`
+- [ ] `lifecycle.changed` events when pause/stop/resume are real
+- [ ] Backend `_DOMAIN_KEYWORDS` entry for `derive_applet_domain` (§10)
+- [ ] Lesson step configured with applet URL + MCP SSE URL in ai-tutor
+
+### Optional (platform v2)
+
+- [ ] Deliverable E: scratchpad compose page
+- [ ] `transcript()` ring buffer (not a stub)
+- [ ] `get_dialogue` MCP tool
+- [ ] Tutor blocks on MCP tool return values
+- [ ] Dev harness: auto-handshake when `?ai=1&debug=bridge=1` (avoids manual console snippets)
+- [ ] Backend dialogue resolver mirror in Python
+
+### Verification commands
+
+```bash
+# Serve applet
+python3 -m http.server 8181
+
+# MCP server
+PORT=3001 HEADLESS=true APPLET_URL=http://localhost:8181/index.html?ai=1 node mcp/mcp-applet-server.js
+
+# Tool smoke (requires agent client or test script)
+# describe_page → start → domain action → check_session_goal
+```
 
 ---
 
 ## 10. Python Backend — derive_applet_domain
 
-Add a domain keyword entry to `mcp_simulation_graph.py` → `_DOMAIN_KEYWORDS` for every new applet type:
+For each new applet **type**, add a keyword row to `mcp_simulation_graph.py` → `_DOMAIN_KEYWORDS`.  
+First label with ≥2 keyword hits in `describe_page` JSON wins.
 
 ```python
-# Example for graph/linear-equations applet:
-("linear-graphs", ("plot", "plotPoint", "equation", "linear", "ordered pair", "graph", "coordinate")),
+_DOMAIN_KEYWORDS: tuple[tuple[str, tuple[str, ...]], ...] = (
+  ("long-division",  ("division", "divisor", "dividend", "quotient", ...)),
+  ("fractions",      ("fraction", "numerator", "denominator", ...)),
+  # Add one row per new applet family:
+  ("YOUR-DOMAIN",    ("keyword1", "keyword2", "keyword3", ...)),
+)
 ```
 
-Without this, MAX falls back to generic guidance text — correct but not domain-specific.
+Use strings that appear in `describePage()` output (`semanticActions`, `currentStep`, `goal.description`, `uiElementValues`).  
+Without a match, MAX still works but uses generic orchestration prompts.
 
 ---
 
-## 11. Boilerplate Generation Template (Recommended)
+## 11. Boilerplate / CI Template (Recommended)
 
-For large-scale applet fleets, scaffold new applets from a template with:
+Scaffold new applets with:
 
-1. `index.html` AI blocks (`APP_CONFIG`, `app-api.js`, `bridge.js`) prewired
-2. Deliverables A+B prewired (`applet-mcp.js`, registration hooks)
-3. Deliverable D/F placeholders prewired (`applet-catalog.js`, `public/dialogues.js`)
-4. `app-api.js` skeleton with:
-   - required introspection methods
-   - required lifecycle actions (`start/stop/pause/resume/reset`)
-   - event translation stubs
-5. `mcp-applet-server.js` skeleton with standard tools predeclared
-6. CI check that validates:
-   - required tools present
-   - required events emitted at least once in scripted smoke run
-   - `describe_page` schema shape
-   - Deliverables A–F files present (or E explicitly disabled)
-   - locale dialogue coverage for required languages
-
-This prevents one-off protocol drift between chapter teams.
+1. Entry HTML: `APP_CONFIG`, `app-api.js`, `bridge.js` prewired
+2. Deliverables A+B installed; C/F placeholders
+3. `app-api.js` skeleton: introspection, lifecycle stubs, event translation table, `resolveDialogue()`
+4. `mcp-applet-server.js` skeleton: standard tools + `DOMAIN_TOOLS` array to fill in
+5. CI scripted smoke (Playwright or MCP client):
+   - `describe_page` schema valid
+   - Required tools listed
+   - Handshake + subscribe receives ≥1 `action.completed` and ≥1 `stage.changed`
+   - `check_session_goal.reached` after completion script
+   - Locale files present for each entry HTML
 
 ---
 
-*This spec is applet-agnostic. `bridge.js` never changes. `app-api.js` and `mcp-applet-server.js` change tool names and state shapes but follow the same structural patterns.*
+## 12. Standalone Dev Testing (No Host)
+
+Opening the applet directly does **not** auto-connect a tutor. The bridge waits for a host.
+
+### Quick console harness (paste after each full page reload)
+
+**Listener:**
+
+```js
+window.addEventListener("message", (e) => {
+  const d = e.data;
+  if (!d || d.type !== "ai.event") return;
+  console.log("[ai.event]", d.event?.type, d.event);
+  console.log("[ev.tutor]", d.event?.tutor || null);
+});
+```
+
+**Handshake + subscribe:**
+
+```js
+const req = (type, extra = {}) =>
+  window.postMessage({ v: 1, type, requestId: `${type}-${Date.now()}`, ...extra }, "*");
+
+window.addEventListener("message", (e) => {
+  const d = e.data;
+  if (!d || d.v !== 1) return;
+  if (d.type === "ai.handshake.ack" && d.ok) {
+    req("ai.subscribe", { filter: {} });
+  }
+  if (d.type === "ai.response") console.log("ai.response", d);
+});
+
+req("ai.handshake", { capabilities: ["events", "actions", "tutor", "transcript"] });
+```
+
+Save as a Chrome DevTools **Snippet** for one-click reuse.  
+For MAX voice / TTS, use the full ai-tutor `SimulationContent` path instead.
+
+### Direct AppAPI smoke (no bridge)
+
+```js
+AppAPI.describePage()
+AppAPI.actions.start()
+AppAPI.checkSessionGoal()
+```
+
+---
+
+## 13. Idle / Inactivity — Two Mechanisms
+
+Do not confuse these:
+
+| Mechanism | Source | Purpose |
+|---|---|---|
+| Applet `inactivity` event | Component idle timer → `ai.event` | Authored nudge via `event.tutor.next` |
+| Host `[IDLE_TIMEOUT]` | `SimulationContent` timer → `/chat` | MAX narrates an auto-demonstrated step (`aiAutoStep` / MCP tools) |
+
+Both can coexist; tune thresholds so they do not fire back-to-back.
+
+---
+
+*This spec is applet-agnostic. `bridge.js` never changes. `app-api.js` and `mcp-applet-server.js` vary by topic but must follow the contracts above.*
