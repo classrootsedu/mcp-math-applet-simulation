@@ -305,9 +305,11 @@ if (port) {
     res.status(200).send("OK");
   });
 
-  app.listen(port, () => {
+  const httpServer = app.listen(port, () => {
     process.stderr.write(`[mcp-applet] MCP server ready (SSE) on port ${port}\n`);
   });
+  httpServer.keepAliveTimeout = 65000;
+  httpServer.headersTimeout = 66000;
 } else {
   const transport = new StdioServerTransport();
   await server.connect(transport);
